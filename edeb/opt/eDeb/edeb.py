@@ -8,7 +8,6 @@ import evas
 import mimetypes
 import getpass, pwd, time#, crypt   -FUTURE
 #~ import commands                  -FUTURE
-#~ from debfile import DebPackage   -FUTURE
 
 """eDeb
 
@@ -244,7 +243,7 @@ def buttons_main(obj, item=None):
 
     fse = elementary.FileselectorEntry(win)
     fse.text_set("Select .deb file")
-    fse.window_title_set("Select a .deb file")
+    fse.window_title_set("Select a .deb file:")
     fse.expandable_set(False)
     fse.inwin_mode_set(False)
     fse.path_set(os.getenv("HOME"))
