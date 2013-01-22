@@ -3,7 +3,7 @@ Version: 1.0
 Section: main
 Priority: optional
 Architecture: all
-Depends: python-elementary, python-evas, python-ecore, python-edbus, python-edje, python-emotion, python-ethumb
+Depends: python-elementary, python-evas, python-ecore, python-edbus, python-edje, python-emotion, python-ethumb, python-pam
 Maintainer: Anthony Cervantes
 Description: eDeb
  A simple GUI to install .deb files.
