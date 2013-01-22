@@ -50,6 +50,8 @@ def buttons_main(obj, item=None):
         popup.text = "<b>Installation Finished!</>"
         bt = elementary.Button(win)
         bt.text = "Close"
+        bt.size_hint_align_set(0.5, evas.EVAS_HINT_FILL)
+        bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, 0.0)
         bt.callback_clicked_add(popup_close, popup)
         popup.part_content_set("button1", bt)
         popup.show()
