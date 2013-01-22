@@ -1,4 +1,4 @@
-edeb
+eDeb
 ====
 
 A small GUI app written in python/python-efls for installing deb files.
