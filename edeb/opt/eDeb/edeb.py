@@ -14,6 +14,8 @@ import getpass, pwd, time#, crypt   -FUTURE
 
 A deb package installer built on Python-EFL's.
 By: AntCer (bodhidocs@gmail.com)
+
+Started: January 17, 2013
 """
 #----M.V.P.
 def buttons_main(obj, item=None):
