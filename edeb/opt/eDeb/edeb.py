@@ -6,7 +6,7 @@ import edje
 import ecore
 import evas
 import mimetypes
-import getpass, pwd, time#, crypt   -FUTURE
+import getpass, pwd, time, PAM
 #~ import commands                  -FUTURE
 
 """eDeb
@@ -16,6 +16,8 @@ By: AntCer (bodhidocs@gmail.com)
 
 Started: January 17, 2013
 """
+
+
 #----M.V.P.
 def buttons_main(obj, item=None):
 
@@ -56,7 +58,6 @@ def buttons_main(obj, item=None):
         popup.part_content_set("button1", bt)
         popup.show()
         win.resize_object_add(popup)
-        
 
 #----Checks
     #~ def file_selected(fse, bt, win): -FUTURE
@@ -81,42 +82,56 @@ def buttons_main(obj, item=None):
 
 #----eSudo
     def esudo(win1):
-        #~ def password_check(bt, en, en1): -FUTURE
-            #~ str = en.entry_get()
-            #~ str1 = en1.entry_get()
-            #~ allegedpwd = str
-            #~ username = getpass.getuser()
-            #~ cryptpwd = pwd.getpwnam(username)[1]
-            #~ realpwd = crypt.crypt(allegedpwd, cryptpwd)
-            #~ print(username, cryptpwd, realpwd)-Debugging Purposes
-            #~ if not str == str1:
-                #~ pw_error_popup(bt, win1)
-                #~ en.entry_set("")
-                #~ en1.entry_set("")
-                #~ return
-            #~ else:
-                #~ esudo_ok(bt, en)
+        def password_check(bt, en):
+            def pam_conv(auth, query_list, userData):
+                str = en.entry_get()
+                resp = []
+                for i in range(len(query_list)):
+                    query, type = query_list[i]
+                    if type == PAM.PAM_PROMPT_ECHO_ON or type == PAM.PAM_PROMPT_ECHO_OFF:
+                        val = str
+                        resp.append((val, 0))
+                    elif type == PAM.PAM_PROMPT_ERROR_MSG or type == PAM.PAM_PROMPT_TEXT_INFO:
+                        print query
+                        resp.append(('', 0))
+                    else:
+                        return None
+                return resp
+
+            username = getpass.getuser()
+            user = username
+            service = 'passwd'
+
+            auth = PAM.pam()
+            auth.start(service)
+            if user == username:
+                auth.set_item(PAM.PAM_USER, user)
+            auth.set_item(PAM.PAM_CONV, pam_conv)
+            try:
+                auth.authenticate()
+                auth.acct_mgmt()
+            except PAM.error, resp:
+                pw_error_popup(bt, win1)
+                en.entry_set("")
+                print("Login Error: Please try again.")
+                return
+            except:
+                print("Internal error")
+            else:
+                esudo_ok(bt, en)
 
         def esudo_cancel(bt, en):
             en.entry_set("")
-            en1.entry_set("")
             win1.delete()
 
-        def esudo_ok(bt, en, en1):
+        def esudo_ok(bt, en):
             file = fse.selected_get()
             str = en.entry_get()
-            str1 = en1.entry_get()
-            if not str == str1:
-                pw_error_popup(bt, win1)
-                en.entry_set("")
-                en1.entry_set("")
-                return
-            else:
-                run_command(False, False, "echo %s | sudo -S dpkg -i %s" %(str, file))
-                time.sleep(10)
-                print("Installation Finished.")
-                win1.delete()
-                finished_popup(bt, win)
+            run_command(False, False, "echo %s | sudo -S dpkg -i %s" %(str, file))
+            time.sleep(15)
+            print("Installation Finished.")
+            win1.delete()
+            finished_popup(bt, win)
 
 
         win1 = elementary.Window("eSudo", elementary.ELM_WIN_BASIC)
@@ -165,26 +180,6 @@ def buttons_main(obj, item=None):
         bz1.pack_end(en)
         en.show()
 
-        bz2 = elementary.Box(win1)
-        bz.pack_end(bz2)
-        bz2.show()
-
-        lb = elementary.Label(win1)
-        lb.text = "<b>Confirm Password:</b>"
-        lb.size_hint_align = (0.0, 0.5)
-        bz2.pack_end(lb)
-        lb.show()
-
-        en1 = elementary.Entry(win1)
-        en1.single_line = True
-        en1.line_wrap_set(False)
-        en1.input_panel_return_key_disabled = True
-        en1.password = True
-        en1.size_hint_weight_set(0.5, 0.5)
-        en1.size_hint_align_set(0.5, 0.5)
-        bz2.pack_end(en1)
-        en1.show()
-
         sep = elementary.Separator(win1)
         sep.horizontal_set(True)
         bz.pack_end(sep)
@@ -208,8 +203,7 @@ def buttons_main(obj, item=None):
 
         bt = elementary.Button(win1)
         bt.text_set("OK")
-        #~ bt.callback_clicked_add(password_check, en, en1)
-        bt.callback_clicked_add(esudo_ok, en, en1)
+        bt.callback_clicked_add(password_check, en)
         bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, 0.0)
         bx2.pack_end(bt)
