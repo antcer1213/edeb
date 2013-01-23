@@ -18,7 +18,7 @@ Started: January 17, 2013
 """
 
 
-#----M.V.P.
+#M.V.P.
 def buttons_main(obj, item=None):
 
 #----Common
@@ -39,10 +39,10 @@ def buttons_main(obj, item=None):
         popup.timeout = 3.0
         popup.show()
 
-    def pw_error_popup(bt, win1):
+    def pw_error_popup(bt, win1): #STILL DOES NOT DISPLAY
         popup = elementary.Popup(win1)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        popup.text = "<b>Password Error</><br><br>Password & confirmation password did <em>not</> match!"
+        popup.text = "<b>Error</><br><br>Password <em>not</> correct!<br>Please try again."
         popup.timeout = 3.0
         popup.show()
 
@@ -82,7 +82,11 @@ def buttons_main(obj, item=None):
 
 #----eSudo
     def esudo(win1):
+
+#--------Password Checker
         def password_check(bt, en):
+
+#------------Sets Password
             def pam_conv(auth, query_list, userData):
                 str = en.entry_get()
                 resp = []
@@ -92,16 +96,17 @@ def buttons_main(obj, item=None):
                         val = str
                         resp.append((val, 0))
                     elif type == PAM.PAM_PROMPT_ERROR_MSG or type == PAM.PAM_PROMPT_TEXT_INFO:
-                        print query
                         resp.append(('', 0))
                     else:
                         return None
                 return resp
 
+#------------Username & Service To Use
             username = getpass.getuser()
             user = username
             service = 'passwd'
 
+#------------Start Password Test
             auth = PAM.pam()
             auth.start(service)
             if user == username:
@@ -113,17 +118,21 @@ def buttons_main(obj, item=None):
             except PAM.error, resp:
                 pw_error_popup(bt, win1)
                 en.entry_set("")
-                print("Login Error: Please try again.")
+                print("Invalid password")
+                print("Please try again")
                 return
             except:
                 print("Internal error")
+                print("File bug report")
             else:
                 esudo_ok(bt, en)
 
+#--------eSudo Cancel Button
         def esudo_cancel(bt, en):
             en.entry_set("")
             win1.delete()
 
+#--------eSudo OK Button
         def esudo_ok(bt, en):
             file = fse.selected_get()
             str = en.entry_get()
@@ -133,7 +142,7 @@ def buttons_main(obj, item=None):
             win1.delete()
             finished_popup(bt, win)
 
-
+#--------eSudo Window
         win1 = elementary.Window("eSudo", elementary.ELM_WIN_BASIC)
         win1.title_set("eSudo")
         win1.borderless_set(True)
