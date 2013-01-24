@@ -31,6 +31,34 @@ def buttons_main(obj, item=None):
     def popup_close(btn, popup):
         popup.delete()
 
+
+#----Progress Bar
+    my_progressbar_run = False
+    my_progressbar_timer = None
+
+    def my_progressbar_value_set(pb):
+        progress = pb.value_get()
+        if progress < 1.0:
+            progress += 0.0123
+        else:
+            progress = 0.0
+        pb.value_set(progress)
+        if progress < 1.0:
+            return ecore.ECORE_CALLBACK_RENEW
+        global my_progressbar_run
+        my_progressbar_run = False
+        return ecore.ECORE_CALLBACK_CANCEL
+
+    def my_progressbar_test_start(obj, *args, **kwargs):
+        (pb) = args
+        global my_progressbar_run
+        global my_progressbar_timer
+        if not my_progressbar_run:
+            my_progressbar_timer = ecore.timer_add(0.1, my_progressbar_value_set,
+                                                *args)
+            my_progressbar_run = True
+
+
 #----Popups
     def file_error_popup(bt, win):
         popup = elementary.Popup(win)
@@ -39,12 +67,24 @@ def buttons_main(obj, item=None):
         popup.timeout = 3.0
         popup.show()
 
-    def pw_error_popup(bt, win1): #STILL DOES NOT DISPLAY
-        popup = elementary.Popup(win1)
+    def pw_error_popup(bt, win1):#STILL DOES NOT DISPLAY
+        popup = elementary.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        popup.text = "<b>Error</><br><br>Password <em>not</> correct!<br>Please try again."
+        popup.text = "<b>Error</><br><br>Incorrect Password!<br>Please try again."
         popup.timeout = 3.0
         popup.show()
+
+    #~ def install_progress_popup(bt, win1):
+        #~ popup1 = elementary.Popup(win1)
+        #~ popup1.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        #~ popup1.text = "<b>Installation Progress</>"
+        #~ popup.timeout = 10.0
+        #~ pb = elementary.Progressbar(win)
+        #~ pb.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        #~ pb.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        #~ pb.show()
+        #~ popup1.part_content_set("progress", pb)
+        #~ popup1.show()
 
     def finished_popup(bt, win):
         popup = elementary.Popup(win)
@@ -52,28 +92,27 @@ def buttons_main(obj, item=None):
         popup.text = "<b>Installation Finished!</>"
         bt = elementary.Button(win)
         bt.text = "Close"
-        bt.size_hint_align_set(0.5, evas.EVAS_HINT_FILL)
-        bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, 0.0)
         bt.callback_clicked_add(popup_close, popup)
         popup.part_content_set("button1", bt)
         popup.show()
         win.resize_object_add(popup)
 
 #----Checks
-    #~ def file_selected(fse, bt, win): -FUTURE
-        #~ file = fse.selected_get()
-        #~ deb = file
-        #~ mimetype = mimetypes.guess_type (deb, strict=1)[0]
-        #~ if not mimetype == "application/x-debian-package":
-            #~ print("Invalid file")
-            #~ return
+    def file_selected(fse, bt, win):
+        file = fse.selected_get()
+        deb = file
+        mimetype = mimetypes.guess_type (deb, strict=1)[0]
+        if not mimetype == "application/x-debian-package":
+            print("Invalid file!")
+            file_error_popup(bt, win)
+            return
 
     def file_selected2(bt, win):
         file = fse.selected_get()
         deb = file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
         if not mimetype == "application/x-debian-package":
-            print("Invalid file")
+            print("Invalid file!")
             file_error_popup(bt, win)
             return
         else:
@@ -118,12 +157,12 @@ def buttons_main(obj, item=None):
             except PAM.error, resp:
                 pw_error_popup(bt, win1)
                 en.entry_set("")
-                print("Invalid password")
-                print("Please try again")
+                print("Invalid password!")
+                print("Please try again.")
                 return
             except:
-                print("Internal error")
-                print("File bug report")
+                print("Internal error!")
+                print("File bug report.")
             else:
                 esudo_ok(bt, en)
 
@@ -134,10 +173,11 @@ def buttons_main(obj, item=None):
 
 #--------eSudo OK Button
         def esudo_ok(bt, en):
+            #~ install_progress_popup(bt, win1)
             file = fse.selected_get()
             str = en.entry_get()
             run_command(False, False, "echo %s | sudo -S dpkg -i %s" %(str, file))
-            time.sleep(15)
+            time.sleep(20)
             print("Installation Finished.")
             win1.delete()
             finished_popup(bt, win)
@@ -182,7 +222,7 @@ def buttons_main(obj, item=None):
         en = elementary.Entry(win1)
         en.single_line = True
         en.line_wrap_set(False)
-        en.input_panel_return_key_disabled = True
+        en.input_panel_return_key_disabled = False
         en.password = True
         en.size_hint_weight_set(0.5, 0.5)
         en.size_hint_align_set(0.5, 0.5)
@@ -252,7 +292,7 @@ def buttons_main(obj, item=None):
     fse.expandable_set(False)
     fse.inwin_mode_set(False)
     fse.path_set(os.getenv("HOME"))
-    #~ fse.callback_file_chosen_add(file_selected, win)
+    fse.callback_file_chosen_add(file_selected, win)
     fse.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
     fse.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
     vbox.pack_end(fse)
