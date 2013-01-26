@@ -1,6 +1,6 @@
 [Desktop Entry]
 Hidden=false
-Exec=python /opt/eDeb/edeb.py
+Exec=edeb
 Icon=gnome-mime-application-x-deb
 Type=Application
 Categories=System;

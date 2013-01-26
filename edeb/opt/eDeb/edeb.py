@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # encoding: utf-8
 import os
-import elementary
-import edje
+import elementary as elm
 import ecore
 import evas
-import mimetypes
-import getpass, pwd, time, PAM
-#~ import commands                  -FUTURE
+import time
+import commands
+import mimetypes, pwd, PAM, getpass
+
 
 """eDeb
 
@@ -26,11 +26,32 @@ def buttons_main(obj, item=None):
         cmd = ecore.Exe(command)
 
     def destroy(obj):
-        elementary.exit()
+        elm.exit()
 
     def popup_close(btn, popup):
         popup.delete()
 
+#----Package Information
+    #~ def pkg_information(fs, bt, win):
+        #~ pkgbox = elm.Box(win)
+        #~ pkgbox.size_hint_align_set(evas.EVAS_HINT_FILL, -1.0)
+        #~ pkgbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        #~ vbox.pack_end(pkgbox)
+        #~ pkgbox.show()    
+    #~ 
+        #~ file = fs.selected_get()
+        #~ pkg_info = commands.getoutput("dpkg -f %s" %file)
+        #~ pkg_info_en = elm.Entry(win)
+        #~ pkg_info_en.line_wrap_set(True)
+        #~ print(pkg_info_en.line_wrap_get())
+        #~ pkg_info_en.input_panel_return_key_disabled = False
+        #~ pkg_info_en.size_hint_align_set(evas.EVAS_HINT_FILL, -1.0)
+        #~ pkg_info_en.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        #~ pkg_info_en.editable_set(False)
+        #~ pkg_info_en.scrollable_set(True)
+        #~ pkg_info_en.entry_set("%s" %pkg_info)
+        #~ pkgbox.pack_end(pkg_info_en)
+        #~ pkg_info_en.show()
 
 #----Progress Bar
     my_progressbar_run = False
@@ -60,26 +81,33 @@ def buttons_main(obj, item=None):
 
 
 #----Popups
+    def nofile_error_popup(bt, win):
+        popup = elm.Popup(win)
+        popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        popup.text = "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation."
+        popup.timeout = 3.0
+        popup.show()
+
     def file_error_popup(bt, win):
-        popup = elementary.Popup(win)
+        popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>Invalid File Format</><br><br>That is <em>not</> a .deb file!"
         popup.timeout = 3.0
         popup.show()
 
-    def pw_error_popup(bt, win1):#STILL DOES NOT DISPLAY
-        popup = elementary.Popup(win)
+    def pw_error_popup(bt, win):#STILL DOES NOT DISPLAY
+        popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>Error</><br><br>Incorrect Password!<br>Please try again."
         popup.timeout = 3.0
         popup.show()
 
     #~ def install_progress_popup(bt, win1):
-        #~ popup1 = elementary.Popup(win1)
+        #~ popup1 = elm.Popup(win1)
         #~ popup1.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         #~ popup1.text = "<b>Installation Progress</>"
         #~ popup.timeout = 10.0
-        #~ pb = elementary.Progressbar(win)
+        #~ pb = elm.Progressbar(win)
         #~ pb.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         #~ pb.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         #~ pb.show()
@@ -87,37 +115,46 @@ def buttons_main(obj, item=None):
         #~ popup1.show()
 
     def finished_popup(bt, win):
-        popup = elementary.Popup(win)
+        popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>Installation Finished!</>"
-        bt = elementary.Button(win)
+        bt = elm.Button(win)
         bt.text = "Close"
         bt.callback_clicked_add(popup_close, popup)
         popup.part_content_set("button1", bt)
         popup.show()
-        win.resize_object_add(popup)
 
 #----Checks
-    def file_selected(fse, bt, win):
-        file = fse.selected_get()
+    def file_selected(fs, bt, win):
+        username = getpass.getuser()
+        file = fs.selected_get()
         deb = file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
-        if not mimetype == "application/x-debian-package":
+        if mimetype == "application/x-debian-package":
+            #~ pkg_information(fs, bt, win)
+            return
+        elif file == "/home/%s" %username or file == "/home/%s/" %username:
+            return
+        else:
             print("Invalid file!")
             file_error_popup(bt, win)
             return
 
     def file_selected2(bt, win):
-        file = fse.selected_get()
+        username = getpass.getuser()
+        file = fs.selected_get()
         deb = file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
-        if not mimetype == "application/x-debian-package":
+        if mimetype == "application/x-debian-package":
+            print(file)
+            esudo(None)
+        elif file == "/home/%s" %username or file == "/home/%s/" %username:
+            nofile_error_popup(bt, win)
+            return
+        else:
             print("Invalid file!")
             file_error_popup(bt, win)
             return
-        else:
-            print(file)
-            esudo(None)
 
 #----eSudo
     def esudo(win1):
@@ -155,7 +192,7 @@ def buttons_main(obj, item=None):
                 auth.authenticate()
                 auth.acct_mgmt()
             except PAM.error, resp:
-                pw_error_popup(bt, win1)
+                pw_error_popup(bt, win)
                 en.entry_set("")
                 print("Invalid password!")
                 print("Please try again.")
@@ -169,57 +206,43 @@ def buttons_main(obj, item=None):
 #--------eSudo Cancel Button
         def esudo_cancel(bt, en):
             en.entry_set("")
-            win1.delete()
+            iw.delete()
 
 #--------eSudo OK Button
         def esudo_ok(bt, en):
             #~ install_progress_popup(bt, win1)
-            file = fse.selected_get()
+            file = fs.selected_get()
             str = en.entry_get()
             run_command(False, False, "echo %s | sudo -S dpkg -i %s" %(str, file))
-            time.sleep(20)
+            time.sleep(15)
             print("Installation Finished.")
-            win1.delete()
+            iw.delete()
             finished_popup(bt, win)
 
 #--------eSudo Window
-        win1 = elementary.Window("eSudo", elementary.ELM_WIN_BASIC)
-        win1.title_set("eSudo")
-        win1.borderless_set(True)
-        win1.focus_allow_set(True)
-        win1.focus_set(True)
-        win1.center(True, True)
-        win1.autodel_set(True)
-
-        bg = elementary.Background(win1)
-        win1.resize_object_add(bg)
-        bg.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        bg.show()
-
-        bz = elementary.Box(win1)
-        win1.resize_object_add(bz)
+        bz = elm.Box(win)
         bz.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
 
-        fr = elementary.Frame(win1)
+        fr = elm.Frame(win)
         fr.text_set("eSudo")
         bz.pack_end(fr)
 
-        sep = elementary.Separator(win1)
+        sep = elm.Separator(win)
         sep.horizontal_set(True)
         bz.pack_end(sep)
         sep.show()
 
-        bz1 = elementary.Box(win1)
+        bz1 = elm.Box(win)
         bz.pack_end(bz1)
         bz1.show()
 
-        lb = elementary.Label(win1)
+        lb = elm.Label(win)
         lb.text = "<b>Password:</b>"
         lb.size_hint_align = (0.0, 0.5)
         bz1.pack_end(lb)
         lb.show()
 
-        en = elementary.Entry(win1)
+        en = elm.Entry(win)
         en.single_line = True
         en.line_wrap_set(False)
         en.input_panel_return_key_disabled = False
@@ -229,7 +252,7 @@ def buttons_main(obj, item=None):
         bz1.pack_end(en)
         en.show()
 
-        sep = elementary.Separator(win1)
+        sep = elm.Separator(win)
         sep.horizontal_set(True)
         bz.pack_end(sep)
         sep.show()
@@ -237,12 +260,12 @@ def buttons_main(obj, item=None):
         bz.show()
         fr.show()
 
-        bx2 = elementary.Box(win1)
+        bx2 = elm.Box(win)
         bx2.horizontal_set(True)
         bx2.size_hint_weight_set(evas.EVAS_HINT_EXPAND, 0.0)
         bx2.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
-        bt = elementary.Button(win1)
+        bt = elm.Button(win)
         bt.text_set("Cancel")
         bt.callback_clicked_add(esudo_cancel, en)
         bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
@@ -250,7 +273,7 @@ def buttons_main(obj, item=None):
         bx2.pack_end(bt)
         bt.show()
 
-        bt = elementary.Button(win1)
+        bt = elm.Button(win)
         bt.text_set("OK")
         bt.callback_clicked_add(password_check, en)
         bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
@@ -262,82 +285,80 @@ def buttons_main(obj, item=None):
         bx2.show()
 
         en.focus_set(True)
-        win1.resize(200, 100)
-        win1.show()
+        iw = elm.InnerWindow(win)
+        iw.content_set(bz)
+        iw.show()
+        iw.activate()
 
 #----Main Window
-    win = elementary.Window("eDeb", elementary.ELM_WIN_BASIC)
-    win.title = "eDeb"
-    if obj is None:
-        win.callback_delete_request_add(lambda o: elementary.exit())
+    win = elm.StandardWindow("edeb", "eDeb")
+    win.callback_delete_request_add(lambda o: elm.exit())
 
-    bg = elementary.Background(win)
-    bg.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-    bg.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-    bg.show()
-
-    vbox = elementary.Box(win)
+    vbox = elm.Box(win)
+    vbox.padding_set(5, 10)
     vbox.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
     vbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
     vbox.show()
 
-    sep = elementary.Separator(win)
+    sep = elm.Separator(win)
     sep.horizontal_set(True)
     vbox.pack_end(sep)
     sep.show()
 
-    fse = elementary.FileselectorEntry(win)
-    fse.text_set("Select .deb file")
-    fse.window_title_set("Select a .deb file:")
-    fse.expandable_set(False)
-    fse.inwin_mode_set(False)
-    fse.path_set(os.getenv("HOME"))
-    fse.callback_file_chosen_add(file_selected, win)
-    fse.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-    fse.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-    vbox.pack_end(fse)
-    fse.show()
+    fsbox = elm.Box(win)
+    #~ fsbox.horizontal_set(True)
+    fsbox.size_hint_align_set(evas.EVAS_HINT_FILL, 0.0)
+    fsbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    vbox.pack_end(fsbox)
+    fsbox.show()
 
-    sep = elementary.Separator(win)
+    fs = elm.FileselectorEntry(win)
+    fs.text_set("Select .deb file")
+    fs.window_title_set("Select a .deb file:")
+    fs.expandable_set(False)
+    fs.inwin_mode_set(False)
+    fs.path_set(os.getenv("HOME"))
+    fs.callback_file_chosen_add(file_selected, win)
+    fs.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+    fs.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    fsbox.pack_end(fs)
+    fs.show()
+
+    sep = elm.Separator(win)
     sep.horizontal_set(True)
     vbox.pack_end(sep)
     sep.show()
 
-    hbox = elementary.Box(win)
-    hbox.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-    hbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-    hbox.horizontal_set(True)
-    vbox.pack_end(hbox)
-    hbox.show()
+    btbox = elm.Box(win)
+    btbox.size_hint_align_set(evas.EVAS_HINT_FILL, -1.0)
+    btbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    vbox.pack_end(btbox)
+    btbox.show()
 
-    bt = elementary.Button(win)
+    bt = elm.Button(win)
     bt.text_set("Install")
     bt.callback_clicked_add(file_selected2, win)
-    bt.size_hint_align_set(0.5, evas.EVAS_HINT_FILL)
-    bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, 0.0)
-    hbox.pack_end(bt)
+    bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+    bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    btbox.pack_end(bt)
     bt.show()
 
-    sep = elementary.Separator(win)
+    sep = elm.Separator(win)
     sep.horizontal_set(True)
-    hbox.pack_end(sep)
+    vbox.pack_end(sep)
     sep.show()
 
-    win.resize_object_add(bg)
     win.resize_object_add(vbox)
-    win.resize_object_add(fse)
-    win.resize_object_add(hbox)
-    win.resize_object_add(bt)
-    win.resize(350, 100)
+    win.resize(450, 125)
     win.show()
 
 #----- Main -{{{-
 if __name__ == "__main__":
-    elementary.init()
+    elm.init()
 
     buttons_main(None)
 
-    elementary.run()
-    elementary.shutdown()
+    elm.run()
+    elm.shutdown()
 # }}}
 # vim:foldmethod=marker
