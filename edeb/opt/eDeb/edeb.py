@@ -148,7 +148,7 @@ def buttons_main(obj, item=None):
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>Error</><br><br>Incorrect Password!<br>Please try again."
-        popup.timeout = 3.0
+        popup.timeout = 2.0
         popup.show()
 
     #~ def install_progress_popup(bt, win):
