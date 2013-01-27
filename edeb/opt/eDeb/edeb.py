@@ -6,6 +6,7 @@ import ecore
 import evas
 import time
 import commands
+#~ import urllib2
 import mimetypes, pwd, PAM, getpass
 
 
@@ -16,7 +17,6 @@ By: AntCer (bodhidocs@gmail.com)
 
 Started: January 17, 2013
 """
-
 
 #M.V.P.
 def buttons_main(obj, item=None):
@@ -31,27 +31,72 @@ def buttons_main(obj, item=None):
     def popup_close(btn, popup):
         popup.delete()
 
+    def iw_close(bt, iw):
+        iw.delete()
+
 #----Package Information
-    #~ def pkg_information(fs, bt, win):
-        #~ pkgbox = elm.Box(win)
-        #~ pkgbox.size_hint_align_set(evas.EVAS_HINT_FILL, -1.0)
-        #~ pkgbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        #~ vbox.pack_end(pkgbox)
-        #~ pkgbox.show()    
-    #~ 
-        #~ file = fs.selected_get()
+    def pkg_information(fs, bt, win):
+        file = fs.selected_get()
         #~ pkg_info = commands.getoutput("dpkg -f %s" %file)
-        #~ pkg_info_en = elm.Entry(win)
-        #~ pkg_info_en.line_wrap_set(True)
-        #~ print(pkg_info_en.line_wrap_get())
-        #~ pkg_info_en.input_panel_return_key_disabled = False
-        #~ pkg_info_en.size_hint_align_set(evas.EVAS_HINT_FILL, -1.0)
-        #~ pkg_info_en.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        #~ pkg_info_en.editable_set(False)
-        #~ pkg_info_en.scrollable_set(True)
-        #~ pkg_info_en.entry_set("%s" %pkg_info)
-        #~ pkgbox.pack_end(pkg_info_en)
-        #~ pkg_info_en.show()
+        pkg_name = commands.getoutput("dpkg -f %s | awk '/Package:/'" %file)
+        pkg_ver  = commands.getoutput("dpkg -f %s | awk '/Version:/'" %file)
+        pkg_sec  = commands.getoutput("dpkg -f %s | awk '/Section:/'" %file)
+        pkg_pri  = commands.getoutput("dpkg -f %s | awk '/Priority:/'" %file)
+        pkg_arch = commands.getoutput("dpkg -f %s | awk '/Architecture:/'" %file)
+        pkg_dep  = commands.getoutput("dpkg -f %s | awk '/Depends:/'" %file)
+        pkg_size = commands.getoutput("dpkg -f %s | awk '/Installed-Size:/'" %file)
+        pkg_auth = commands.getoutput("dpkg -f %s | awk '/Maintainer:/'" %file)
+        pkg_desc = commands.getoutput("dpkg -f %s | awk '/Description:/'" %file)
+
+        pkgbox = elm.Box(win)
+        pkgbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+
+        pkgfr = elm.Frame(win)
+        pkgfr.text_set("Package Information:")
+        pkgfr.autocollapse_set(True)
+        pkgbox.pack_end(pkgfr)
+
+        pkg_info_en = elm.Entry(win)
+        pkg_info_en.line_wrap_set(2)
+        pkg_info_en.input_panel_return_key_disabled = False
+        pkg_info_en.size_hint_align_set(evas.EVAS_HINT_FILL, -1.0)
+        pkg_info_en.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        pkg_info_en.editable_set(False)
+        pkg_info_en.scrollable_set(True)
+        pkg_info_en.entry_set("%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps><ps>%s<ps><ps>%s<ps>%s<ps><ps>%s<ps>" %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_size, pkg_sec, pkg_pri, pkg_dep, pkg_desc))
+        #~ pkg_info_en.entry_set("%s<ps>" %pkg_info)
+        pkgbox.pack_end(pkg_info_en)
+        pkg_info_en.show()
+
+        pkgbox.show()
+        pkgfr.show()
+        iw = elm.InnerWindow(win)
+        iw.content_set(pkgbox)
+        iw.show()
+
+        bt = elm.Button(win)
+        bt.text_set("OK")
+        bt.callback_clicked_add(iw_close, iw)
+        bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, 0.0)
+        pkgbox.pack_end(bt)
+        bt.show()
+
+#----Dependency Grab
+    #~ def dependency_grab(bt, en):
+        #~ try:
+            #~ con = urllib2.urlopen("http://www.google.com/")
+            #~ str = en.entry_get()
+            #~ print("Starting Dependency Grab:")
+            #~ run_command(False, False, "echo %s | sudo -S apt-get -f install" %(str))
+            #~ time.sleep(15)
+            #~ print("Installation Fully Completed.")
+            #~ iw.delete()
+            #~ finished_popup(bt, win)
+        #~ except:
+            #~ print("No network activity detected")
+            #~ print(" ")
+            #~ print("Please try again with an established Internet Connection.")
 
 #----Progress Bar
     my_progressbar_run = False
@@ -102,8 +147,8 @@ def buttons_main(obj, item=None):
         popup.timeout = 3.0
         popup.show()
 
-    #~ def install_progress_popup(bt, win1):
-        #~ popup1 = elm.Popup(win1)
+    #~ def install_progress_popup(bt, win):
+        #~ popup1 = elm.Popup(win)
         #~ popup1.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         #~ popup1.text = "<b>Installation Progress</>"
         #~ popup.timeout = 10.0
@@ -124,6 +169,16 @@ def buttons_main(obj, item=None):
         popup.part_content_set("button1", bt)
         popup.show()
 
+    #~ def dependency_popup(bt, win):
+        #~ popup = elm.Popup(win)
+        #~ popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        #~ popup.text = "<b>Urgent:</><br>Installation Semi-Finished.<br>All dependencies were not met.<br>Click <b>Grab</> to attempt to install all dependencies."
+        #~ bt = elm.Button(win)
+        #~ bt.text = "Grab"
+        #~ bt.callback_clicked_add(dependency_grab, popup)
+        #~ popup.part_content_set("button1", bt)
+        #~ popup.show()
+
 #----Checks
     def file_selected(fs, bt, win):
         username = getpass.getuser()
@@ -131,7 +186,7 @@ def buttons_main(obj, item=None):
         deb = file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
         if mimetype == "application/x-debian-package":
-            #~ pkg_information(fs, bt, win)
+            pkg_information(fs, bt, win)
             return
         elif file == "/home/%s" %username or file == "/home/%s/" %username:
             return
@@ -148,6 +203,22 @@ def buttons_main(obj, item=None):
         if mimetype == "application/x-debian-package":
             print(file)
             esudo(None)
+        elif file == "/home/%s" %username or file == "/home/%s/" %username:
+            nofile_error_popup(bt, win)
+            return
+        else:
+            print("Invalid file!")
+            file_error_popup(bt, win)
+            return
+            
+    def file_selected3(bt, win):
+        username = getpass.getuser()
+        file = fs.selected_get()
+        deb = file
+        mimetype = mimetypes.guess_type (deb, strict=1)[0]
+        if mimetype == "application/x-debian-package":
+            pkg_information(fs, bt, win)
+            return
         elif file == "/home/%s" %username or file == "/home/%s/" %username:
             nofile_error_popup(bt, win)
             return
@@ -194,12 +265,10 @@ def buttons_main(obj, item=None):
             except PAM.error, resp:
                 pw_error_popup(bt, win)
                 en.entry_set("")
-                print("Invalid password!")
-                print("Please try again.")
+                print("Invalid password! Please try again.")
                 return
             except:
-                print("Internal error!")
-                print("File bug report.")
+                print("Internal error! File bug report.")
             else:
                 esudo_ok(bt, en)
 
@@ -210,11 +279,12 @@ def buttons_main(obj, item=None):
 
 #--------eSudo OK Button
         def esudo_ok(bt, en):
-            #~ install_progress_popup(bt, win1)
+            #~ install_progress_popup(bt, win)
             file = fs.selected_get()
             str = en.entry_get()
+            print("Starting installation:")
             run_command(False, False, "echo %s | sudo -S dpkg -i %s" %(str, file))
-            time.sleep(15)
+            time.sleep(20)
             print("Installation Finished.")
             iw.delete()
             finished_popup(bt, win)
@@ -295,7 +365,7 @@ def buttons_main(obj, item=None):
     win.callback_delete_request_add(lambda o: elm.exit())
 
     vbox = elm.Box(win)
-    vbox.padding_set(5, 10)
+    vbox.padding_set(5, 20)
     vbox.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
     vbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
     vbox.show()
@@ -343,13 +413,21 @@ def buttons_main(obj, item=None):
     btbox.pack_end(bt)
     bt.show()
 
+    bt = elm.Button(win)
+    bt.text_set("Package Info")
+    bt.callback_clicked_add(file_selected3, win)
+    bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+    bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    btbox.pack_end(bt)
+    bt.show()
+
     sep = elm.Separator(win)
     sep.horizontal_set(True)
     vbox.pack_end(sep)
     sep.show()
 
     win.resize_object_add(vbox)
-    win.resize(450, 125)
+    win.resize(450, 150)
     win.show()
 
 #----- Main -{{{-
