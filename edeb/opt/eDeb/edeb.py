@@ -134,14 +134,14 @@ def buttons_main(obj, item=None):
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation."
-        popup.timeout = 3.0
+        popup.timeout = 2.0
         popup.show()
 
     def file_error_popup(bt, win):
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>Invalid File Format</><br><br>That is <em>not</> a .deb file!"
-        popup.timeout = 3.0
+        popup.timeout = 2.0
         popup.show()
 
     def pw_error_popup(bt, win):#STILL DOES NOT DISPLAY
