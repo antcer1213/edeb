@@ -63,7 +63,7 @@ def buttons_main(obj, item=None):
         pkg_info_en.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         pkg_info_en.editable_set(False)
         pkg_info_en.scrollable_set(True)
-        pkg_info_en.entry_set("%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps><ps>%s<ps><ps>%s<ps>%s<ps><ps>%s<ps>" %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_size, pkg_sec, pkg_pri, pkg_dep, pkg_desc))
+        pkg_info_en.entry_set("%s<ps>%s<ps><ps>%s<ps>%s<ps>%s<ps><ps>%s<ps><ps>%s<ps>%s<ps><ps>%s<ps>" %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_size, pkg_sec, pkg_pri, pkg_dep, pkg_desc))
         #~ pkg_info_en.entry_set("%s<ps>" %pkg_info)
         pkgbox.pack_end(pkg_info_en)
         pkg_info_en.show()
@@ -73,6 +73,7 @@ def buttons_main(obj, item=None):
         iw = elm.InnerWindow(win)
         iw.content_set(pkgbox)
         iw.show()
+        iw.activate()
 
         bt = elm.Button(win)
         bt.text_set("OK")
