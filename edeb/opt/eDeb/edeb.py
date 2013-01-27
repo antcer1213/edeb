@@ -37,13 +37,12 @@ def buttons_main(obj, item=None):
 #----Package Information
     def pkg_information(fs, bt, win):
         file = fs.selected_get()
-        #~ pkg_info = commands.getoutput("dpkg -f %s" %file)
         pkg_name = commands.getoutput("dpkg -f %s | awk '/Package:/'" %file)
         pkg_ver  = commands.getoutput("dpkg -f %s | awk '/Version:/'" %file)
         pkg_sec  = commands.getoutput("dpkg -f %s | awk '/Section:/'" %file)
         pkg_pri  = commands.getoutput("dpkg -f %s | awk '/Priority:/'" %file)
         pkg_arch = commands.getoutput("dpkg -f %s | awk '/Architecture:/'" %file)
-        pkg_dep  = commands.getoutput("dpkg -f %s | awk '/Depends:/'" %file)
+        pkg_dep  = commands.getoutput("dpkg -f %s | sed 's/<</less than/' |awk '/Depends:/'" %file)
         pkg_size = commands.getoutput("dpkg -f %s | awk '/Installed-Size:/'" %file)
         pkg_auth = commands.getoutput("dpkg -f %s | awk '/Maintainer:/'" %file)
         pkg_desc = commands.getoutput("dpkg -f %s | awk '/Description:/'" %file)
@@ -68,8 +67,7 @@ def buttons_main(obj, item=None):
         pkg_info_en.editable_set(False)
         pkg_info_en.scrollable_set(True)
         pkg_info_en.entry_set("%s<ps>%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps>%s<ps><ps>%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s" \
-                            %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_size, pkg_sec, pkg_pri, pkg_dep, pkg_desc, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
-        #~ pkg_info_en.entry_set("%s<ps>" %pkg_info)
+                            %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_size, pkg_sec, pkg_pri, pkg_desc, pkg_dep, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
         pkgbox.pack_end(pkg_info_en)
         pkg_info_en.show()
 
