@@ -47,13 +47,17 @@ def buttons_main(obj, item=None):
         pkg_size = commands.getoutput("dpkg -f %s | awk '/Installed-Size:/'" %file)
         pkg_auth = commands.getoutput("dpkg -f %s | awk '/Maintainer:/'" %file)
         pkg_desc = commands.getoutput("dpkg -f %s | awk '/Description:/'" %file)
+        pkg_recc = commands.getoutput("dpkg -f %s | awk '/Recommends:/'" %file)
+        pkg_conf = commands.getoutput("dpkg -f %s | awk '/Conflicts:/'" %file)
+        pkg_repl = commands.getoutput("dpkg -f %s | awk '/Replaces:/'" %file)
+        pkg_prov = commands.getoutput("dpkg -f %s | awk '/Provides:/'" %file)
+        pkg_hp   = commands.getoutput("dpkg -f %s | awk '/Homepage:/'" %file)
 
         pkgbox = elm.Box(win)
         pkgbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
 
         pkgfr = elm.Frame(win)
         pkgfr.text_set("Package Information:")
-        pkgfr.autocollapse_set(True)
         pkgbox.pack_end(pkgfr)
 
         pkg_info_en = elm.Entry(win)
@@ -63,7 +67,7 @@ def buttons_main(obj, item=None):
         pkg_info_en.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         pkg_info_en.editable_set(False)
         pkg_info_en.scrollable_set(True)
-        pkg_info_en.entry_set("%s<ps>%s<ps><ps>%s<ps>%s<ps>%s<ps><ps>%s<ps><ps>%s<ps>%s<ps><ps>%s<ps>" %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_size, pkg_sec, pkg_pri, pkg_dep, pkg_desc))
+        pkg_info_en.entry_set("%s<ps>%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps>%s<ps><ps>%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s" %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_size, pkg_sec, pkg_pri, pkg_dep, pkg_desc, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
         #~ pkg_info_en.entry_set("%s<ps>" %pkg_info)
         pkgbox.pack_end(pkg_info_en)
         pkg_info_en.show()

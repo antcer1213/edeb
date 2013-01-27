@@ -5,5 +5,5 @@ Priority: optional
 Architecture: all
 Depends: python-elementary, python-evas, python-ecore, python-edbus, python-edje, python-emotion, python-ethumb, python-pam
 Maintainer: Anthony Cervantes
-Description: eDeb
+Description: eDeb (Deb Package Installer)
  A simple GUI to install .deb files.
