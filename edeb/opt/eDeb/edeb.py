@@ -2,11 +2,12 @@
 # encoding: utf-8
 import os
 import elementary as elm
+import apt.debfile as debianfile
 import ecore
 import evas
 import time
 import commands
-#~ import urllib2
+#~ import urllib, urllib2
 import mimetypes, pwd, PAM, getpass
 
 
@@ -34,15 +35,29 @@ def buttons_main(obj, item=None):
     def iw_close(bt, iw):
         iw.delete()
 
-#----Package Information
+    #~ def _get_file_path_from_dnd_dropped_uri(uri):
+        #~ """ helper to get a useful path from a drop uri"""
+        #~ path = urllib.url2pathname(uri) # escape special chars
+        #~ path = path.strip('\r\n\x00') # remove \r\n and NULL
+        #~ # get the path to file
+        #~ if path.startswith('file:\\\\\\'): # windows
+            #~ path = path[8:] # 8 is len('file:///')
+        #~ elif path.startswith('file://'): # nautilus, rox
+            #~ path = path[7:] # 7 is len('file://')
+        #~ elif path.startswith('file:'): # xffm
+            #~ path = path[5:] # 5 is len('file:')
+        #~ return path
+
+#----Package Info
     def pkg_information(fs, bt, win):
         file = fs.selected_get()
+        deb = debianfile.DebPackage(file, cache=None)
         pkg_name = commands.getoutput("dpkg -f %s | awk '/Package:/'" %file)
         pkg_ver  = commands.getoutput("dpkg -f %s | awk '/Version:/'" %file)
         pkg_sec  = commands.getoutput("dpkg -f %s | awk '/Section:/'" %file)
         pkg_pri  = commands.getoutput("dpkg -f %s | awk '/Priority:/'" %file)
         pkg_arch = commands.getoutput("dpkg -f %s | awk '/Architecture:/'" %file)
-        pkg_dep  = commands.getoutput("dpkg -f %s | sed 's/<</less than/' |awk '/Depends:/'" %file)
+        pkg_dep  = commands.getoutput("dpkg -f %s | sed 's/<</less than/' | awk '/Depends:/'" %file)
         pkg_size = commands.getoutput("dpkg -f %s | awk '/Installed-Size:/'" %file)
         pkg_auth = commands.getoutput("dpkg -f %s | awk '/Maintainer:/'" %file)
         pkg_desc = commands.getoutput("dpkg -f %s | awk '/Description:/'" %file)
@@ -51,6 +66,38 @@ def buttons_main(obj, item=None):
         pkg_repl = commands.getoutput("dpkg -f %s | awk '/Replaces:/'" %file)
         pkg_prov = commands.getoutput("dpkg -f %s | awk '/Provides:/'" %file)
         pkg_hp   = commands.getoutput("dpkg -f %s | awk '/Homepage:/'" %file)
+
+        def checks(btn, pkg_info_en):
+            if deb.check() ==  False:
+                pkg_info_en.entry_set("<b>WARNING:</> This package <b>CANNOT</> be installed.")
+            elif deb.check_breaks_existing_packages() == False:
+                pkg_info_en.entry_set("<b>WARNING:</> Installing this package will <b>BREAK</> certain existing packages.")
+            elif deb.check_conflicts() == False:
+                pkg_info_en.entry_set("<b>WARNING:</> There are conflicting packages!")
+                conflicting = deb.conflicts
+                pkg_info_en.entry_append("<ps> %s" %conflicting)
+            else:
+                pkg_info_en.entry_set("<b>CLEAR:</> You are cleared to go. The selected file has passed ALL checks.")
+
+        def depends(btn, pkg_info_en):
+            #~ depending = deb.depends
+            pkg_dep0  = commands.getoutput("dpkg -f %s | sed 's/<</less than/' | awk '/Depends:/' | sed 's/Depends:/ /'" %file)
+            if deb.check() == True:
+                missdep   = deb.missing_deps
+                pkg_info_en.entry_set("<b>Dependencies:</> %s<ps><ps><b>Missing Dependencies:</> " %pkg_dep0)
+                if missdep == []:
+                    pkg_info_en.entry_append("None<ps>")
+                else:
+                    pkg_info_en.entry_append("%s<ps>" %missdep)
+
+        def info(btn, pkg_info_en):
+            pkg_info_en.entry_set("%s<ps>%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps>%s<ps><ps>%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s" \
+                            %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_size, pkg_sec, pkg_pri, pkg_desc, pkg_dep, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
+
+        def files(btn, pkg_info_en):
+            filesinlist = deb.filelist
+            pkg_info_en.entry_set("%s<ps>" %filesinlist)
+
 
         pkgbox = elm.Box(win)
         pkgbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
@@ -73,10 +120,49 @@ def buttons_main(obj, item=None):
 
         pkgbox.show()
         pkgfr.show()
+
         iw = elm.InnerWindow(win)
         iw.content_set(pkgbox)
         iw.show()
         iw.activate()
+
+        btnbox = elm.Box(win)
+        btnbox.horizontal = True
+        btnbox.size_hint_weight = (evas.EVAS_HINT_EXPAND, 0.0)
+        pkgbox.pack_end(btnbox)
+        btnbox.show()
+
+        bt = elm.Button(win)
+        bt.text = "Info"
+        bt.size_hint_align = (evas.EVAS_HINT_FILL, 0.0)
+        bt.size_hint_weight = (evas.EVAS_HINT_EXPAND, 0.0)
+        bt.callback_clicked_add(info, pkg_info_en)
+        btnbox.pack_end(bt)
+        bt.show()
+
+        bt = elm.Button(win)
+        bt.text = "Checks"
+        bt.size_hint_align = (evas.EVAS_HINT_FILL, 0.0)
+        bt.size_hint_weight = (evas.EVAS_HINT_EXPAND, 0.0)
+        bt.callback_clicked_add(checks, pkg_info_en)
+        btnbox.pack_end(bt)
+        bt.show()
+
+        bt = elm.Button(win)
+        bt.text = "Depends"
+        bt.size_hint_align = (evas.EVAS_HINT_FILL, 0.0)
+        bt.size_hint_weight = (evas.EVAS_HINT_EXPAND, 0.0)
+        bt.callback_clicked_add(depends, pkg_info_en)
+        btnbox.pack_end(bt)
+        bt.show()
+
+        bt = elm.Button(win)
+        bt.text = "Files"
+        bt.size_hint_align = (evas.EVAS_HINT_FILL, 0.0)
+        bt.size_hint_weight = (evas.EVAS_HINT_EXPAND, 0.0)
+        bt.callback_clicked_add(files, pkg_info_en)
+        btnbox.pack_end(bt)
+        bt.show()
 
         bt = elm.Button(win)
         bt.text_set("OK")
@@ -102,75 +188,26 @@ def buttons_main(obj, item=None):
             #~ print(" ")
             #~ print("Please try again with an established Internet Connection.")
 
-#----Progress Bar
-    my_progressbar_run = False
-    my_progressbar_timer = None
-
-    def my_progressbar_value_set(pb):
-        progress = pb.value_get()
-        if progress < 1.0:
-            progress += 0.0123
-        else:
-            progress = 0.0
-        pb.value_set(progress)
-        if progress < 1.0:
-            return ecore.ECORE_CALLBACK_RENEW
-        global my_progressbar_run
-        my_progressbar_run = False
-        return ecore.ECORE_CALLBACK_CANCEL
-
-    def my_progressbar_test_start(obj, *args, **kwargs):
-        (pb) = args
-        global my_progressbar_run
-        global my_progressbar_timer
-        if not my_progressbar_run:
-            my_progressbar_timer = ecore.timer_add(0.1, my_progressbar_value_set,
-                                                *args)
-            my_progressbar_run = True
-
-
 #----Popups
     def nofile_error_popup(bt, win):
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation."
-        popup.timeout = 2.0
+        popup.timeout = 3.0
         popup.show()
 
     def file_error_popup(bt, win):
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>Invalid File Format</><br><br>That is <em>not</> a .deb file!"
-        popup.timeout = 2.0
+        popup.timeout = 3.0
         popup.show()
 
-    def pw_error_popup(bt, win):
+    def pw_error_popup(bt, win):#STILL DOES NOT DISPLAY
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>Error</><br><br>Incorrect Password!<br>Please try again."
-        popup.timeout = 2.0
-        popup.show()
-
-    #~ def install_progress_popup(bt, win):
-        #~ popup1 = elm.Popup(win)
-        #~ popup1.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        #~ popup1.text = "<b>Installation Progress</>"
-        #~ popup.timeout = 10.0
-        #~ pb = elm.Progressbar(win)
-        #~ pb.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        #~ pb.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        #~ pb.show()
-        #~ popup1.part_content_set("progress", pb)
-        #~ popup1.show()
-
-    def finished_popup(bt, win):
-        popup = elm.Popup(win)
-        popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        popup.text = "<b>Installation Finished!</>"
-        bt = elm.Button(win)
-        bt.text = "Close"
-        bt.callback_clicked_add(popup_close, popup)
-        popup.part_content_set("button1", bt)
+        popup.timeout = 3.0
         popup.show()
 
     #~ def dependency_popup(bt, win):
@@ -276,6 +313,54 @@ def buttons_main(obj, item=None):
             else:
                 esudo_ok(bt, en)
 
+#------Finished
+        def finished_popup(win, en):
+            #~ file = fs.selected_get()
+            #~ str = en.entry_get()
+            #~ installed_output = commands.getoutput("echo %s | sudo -S dpkg -i %s" %(str, file))
+
+            pkgbox = elm.Box(win)
+            pkgbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+
+            lb = elm.Label(win)
+            lb.text = "<b>Installation Finished!</b><br><br>Installation Output:"
+            lb.size_hint_align = (0.5, 0.5)
+            pkgbox.pack_end(lb)
+            lb.show()
+
+            #~ pkgfr = elm.Frame(win)
+            #~ pkgfr.text_set("Installation Output:")
+            #~ pkgbox.pack_end(pkgfr)
+
+            pkg_info_en = elm.Entry(win)
+            pkg_info_en.line_wrap_set(2)
+            pkg_info_en.input_panel_return_key_disabled = False
+            pkg_info_en.size_hint_align_set(evas.EVAS_HINT_FILL, -1.0)
+            pkg_info_en.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+            pkg_info_en.editable_set(False)
+            pkg_info_en.scrollable_set(True)
+            #~ pkg_info_en.entry_set("%s<ps>" \
+                                #~ %(installed_output))
+            pkg_info_en.entry_set("WORK IN PROGRESS: IN CONSTRUCTION<ps>")
+            pkgbox.pack_end(pkg_info_en)
+            pkg_info_en.show()
+
+            pkgbox.show()
+            #~ pkgfr.show()
+
+            iw = elm.InnerWindow(win)
+            iw.content_set(pkgbox)
+            iw.show()
+            iw.activate()
+        
+            bt = elm.Button(win)
+            bt.text_set("Close")
+            bt.callback_clicked_add(iw_close, iw)
+            bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+            bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, 0.0)
+            pkgbox.pack_end(bt)
+            bt.show()
+
 #--------eSudo Cancel Button
         def esudo_cancel(bt, en):
             en.entry_set("")
@@ -283,7 +368,6 @@ def buttons_main(obj, item=None):
 
 #--------eSudo OK Button
         def esudo_ok(bt, en):
-            #~ install_progress_popup(bt, win)
             file = fs.selected_get()
             str = en.entry_get()
             print("Starting installation:")
@@ -291,7 +375,7 @@ def buttons_main(obj, item=None):
             time.sleep(20)
             print("Installation Finished.")
             iw.delete()
-            finished_popup(bt, win)
+            finished_popup(win, en)
 
 #--------eSudo Window
         bz = elm.Box(win)
@@ -339,6 +423,11 @@ def buttons_main(obj, item=None):
         bx2.size_hint_weight_set(evas.EVAS_HINT_EXPAND, 0.0)
         bx2.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
+        iw = elm.InnerWindow(win)
+        iw.content_set(bz)
+        iw.show()
+        iw.activate()
+
         bt = elm.Button(win)
         bt.text_set("Cancel")
         bt.callback_clicked_add(esudo_cancel, en)
@@ -359,10 +448,6 @@ def buttons_main(obj, item=None):
         bx2.show()
 
         en.focus_set(True)
-        iw = elm.InnerWindow(win)
-        iw.content_set(bz)
-        iw.show()
-        iw.activate()
 
 #----Main Window
     win = elm.StandardWindow("edeb", "eDeb")
@@ -380,7 +465,6 @@ def buttons_main(obj, item=None):
     sep.show()
 
     fsbox = elm.Box(win)
-    #~ fsbox.horizontal_set(True)
     fsbox.size_hint_align_set(evas.EVAS_HINT_FILL, 0.0)
     fsbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
     vbox.pack_end(fsbox)
