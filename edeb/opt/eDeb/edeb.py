@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 """eDeb
 
-A deb package installer built on Python-EFL's.
+A deb-package installer built on Python-EFL's.
 By: AntCer (bodhidocs@gmail.com)
 
 Uses a slightly modified eSudo, initially made
