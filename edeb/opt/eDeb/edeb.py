@@ -253,7 +253,7 @@ def buttons_main(obj, item=None):
     def not_installable_popup(win):
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        popup.text = "<b>Error</b><br><br>This file has failed initial check. It has been deemed uninstallable.."
+        popup.text = "<b>Error</b><br><br>This file has failed initial check. It cannot be installed.<br>This can be caused by a previously broken installation. Try running 'sudo apt-get install -f' in a terminal."
         popup.timeout = 2.0
         popup.show()
 
