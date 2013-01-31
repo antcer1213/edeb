@@ -268,11 +268,11 @@ def buttons_main(obj, item=None):
 
         lb = elm.Label(win)
         lb.line_wrap_set(2)
-        lb.wrap_width_set(250)
-        lb.text = "Installation Semi-Finished. All dependencies were not met.<ps><ps>Click <b>Grab</> to attempt to grab the missing dependencies and complete the installation.<ps><ps>"
-        lb.size_hint_align = (0.5, 0.5)
-        pkgbox.pack_end(lb)
+        lb.wrap_width_set(280)
+        lb.text = "Installation Semi-Finished. All dependencies were not met.<ps><ps>Click <b>Grab</> to attempt to grab the missing dependencies and complete the installation."
+        lb.size_hint_align = (0.0, 0.5)
         lb.show()
+        pkgfr.content = lb
 
         pkgbox.show()
         pkgfr.show()
@@ -300,11 +300,11 @@ def buttons_main(obj, item=None):
 
         lb = elm.Label(win)
         lb.line_wrap_set(2)
-        lb.wrap_width_set(250)
-        lb.text = "The installation was successful.<ps><ps><ps><ps>"
-        lb.size_hint_align = (0.5, 0.5)
-        pkgbox.pack_end(lb)
+        lb.wrap_width_set(280)
+        lb.text = "The installation was successful."
+        lb.size_hint_align = (0.0, 0.5)
         lb.show()
+        pkgfr.content = lb
 
         pkgbox.show()
         pkgfr.show()
@@ -321,6 +321,8 @@ def buttons_main(obj, item=None):
         bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, 0.0)
         pkgbox.pack_end(bt)
         bt.show()
+
+        pkgbox.pack_end(pkgbox2)
 
 #----Chcks
     def check_file_initial(fs, bt, win):
