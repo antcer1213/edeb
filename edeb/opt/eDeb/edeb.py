@@ -64,7 +64,6 @@ def buttons_main(obj, item=None):
             print("No network activity detected")
             print(" ")
             print("Please try again with an established Internet Connection.")
-            iw.delete()
             no_net_popup(win)
         else:
             print("Starting attempt to fulfill dependencies:")
