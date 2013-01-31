@@ -10,12 +10,17 @@ import esudo
 import urllib2
 import mimetypes
 import getpass, commands
-
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 """eDeb
 
 A deb package installer built on Python-EFL's.
 By: AntCer (bodhidocs@gmail.com)
+
+Uses a slightly modified eSudo, initially made
+by Anthony Cervantes, now maintained by Jeff Hoogland,
+and improved upon further by Kai Huuko.
 
 Started: January 17, 2013
 """
@@ -37,23 +42,23 @@ def buttons_main(obj, item=None):
 
     def dep_grab_cb(exit_code):
         if exit_code == 0:
-            print("Successfully Grabbed Dependencies.")
+            logging.info("Successfully Grabbed Dependencies.")
             finished_dep_install_popup(win)
         else:
-            print("Something went wrong while installing dependencies.")
+            logging.info("Something went wrong while installing dependencies.")
     def main_cb(exit_code):
         if exit_code == 0:
-            print("Installation Completed!")
+            logging.info("Installation Completed!")
             finished_popup(win)
         else:
-            print("Something went wrong. Likely, dependencies that weren't met before attempting installation.")
+            logging.info("Something went wrong. Likely, dependencies that weren't met before attempting installation.")
             dependency_popup(win)
     def dep_cb(exit_code):
         if exit_code == 0:
-            print("Successfully Grabbed Dependencies & Completed Installation.")
+            logging.info("Successfully Grabbed Dependencies & Completed Installation.")
             finished_popup(win)
         else:
-            print("Something went wrong while attempting to complete installation.")
+            logging.info("Something went wrong while attempting to complete installation.")
 
 #----Dependency Completion
     def dependency_comp(bt, win, iw):
@@ -61,12 +66,11 @@ def buttons_main(obj, item=None):
         try:
             con = urllib2.urlopen("http://www.google.com/")
         except:
-            print("No network activity detected")
-            print(" ")
-            print("Please try again with an established Internet Connection.")
+            logging.exception("No network activity detected")
+            logging.exception("Please try again with an established Internet Connection.")
             no_net_popup(win)
         else:
-            print("Starting attempt to fulfill dependencies:")
+            logging.info("Starting attempt to fulfill dependencies:")
             dep_comp = "apt-get -f install -y"
             esudo.eSudo(dep_comp, win, end_callback=dep_cb)
 
@@ -93,16 +97,15 @@ def buttons_main(obj, item=None):
             try:
                 con = urllib2.urlopen("http://www.google.com/")
             except:
-                print("No network activity detected")
-                print(" ")
-                print("Please try again with an established Internet Connection.")
+                logging.exception("No network activity detected")
+                logging.exception("Please try again with an established Internet Connection.")
                 iw.delete()
                 no_net_popup(win)
             else:
                 missingdep = deb.missing_deps
                 separator_string = " "
                 missdep = separator_string.join(missingdep)
-                print("Starting Dependency Grab:")
+                logging.info("Starting Dependency Grab:")
                 dep_grab = "apt-get --no-install-recommends install -y %s" %(missdep)
                 esudo.eSudo(dep_grab, win, end_callback=dep_grab_cb)
 
@@ -226,35 +229,35 @@ def buttons_main(obj, item=None):
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>Error</><br><br>No internet access.<br>Please try again when connected to internet."
-        popup.timeout = 2.0
+        popup.timeout = 3.0
         popup.show()
 
     def nofile_error_popup(bt, win):
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation."
-        popup.timeout = 2.0
+        popup.timeout = 3.0
         popup.show()
 
     def file_error_popup(bt, win):
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>Invalid File Format</><br><br>That is <em>not</> a .deb file!"
-        popup.timeout = 2.0
+        popup.timeout = 3.0
         popup.show()
 
     def finished_dep_install_popup(win):
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>Successful!</b><br><br>Missing dependencies successfully installed."
-        popup.timeout = 2.0
+        popup.timeout = 3.0
         popup.show()
 
     def not_installable_popup(win):
         popup = elm.Popup(win)
         popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "<b>Error</b><br><br>This file has failed initial check. It cannot be installed.<br>This can be caused by a previously broken installation. Try running 'sudo apt-get install -f' in a terminal."
-        popup.timeout = 2.0
+        popup.timeout = 3.0
         popup.show()
 
     def dependency_popup(win):
@@ -335,7 +338,7 @@ def buttons_main(obj, item=None):
         elif file == "/home/%s" %username or file == "/home/%s/" %username:
             return
         else:
-            print("Invalid file!")
+            logging.info("Invalid file!")
             file_error_popup(bt, win)
             return
 
@@ -346,18 +349,14 @@ def buttons_main(obj, item=None):
         deb = file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
         if mimetype == "application/x-debian-package":
-            if debfile.check() ==  False:
-                not_installable_popup(win)
-                return
-            else:
-                print(file)
-                install_deb = 'dpkg -i %s'%file
-                esudo.eSudo(install_deb, win, end_callback=main_cb)
+            logging.info(file)
+            install_deb = 'dpkg -i %s'%file
+            esudo.eSudo(install_deb, win, end_callback=main_cb)
         elif file == "/home/%s" %username or file == "/home/%s/" %username:
             nofile_error_popup(bt, win)
             return
         else:
-            print("Invalid file!")
+            logging.info("Invalid file!")
             file_error_popup(bt, win)
             return
 
@@ -373,7 +372,7 @@ def buttons_main(obj, item=None):
             nofile_error_popup(bt, win)
             return
         else:
-            print("Invalid file!")
+            logging.info("Invalid file!")
             file_error_popup(bt, win)
             return
 
