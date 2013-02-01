@@ -326,7 +326,7 @@ def buttons_main(obj, item=None):
 
         pkgbox.pack_end(pkgbox2)
 
-#----Chcks
+#----Checks
     def check_file_initial(fs, bt, win):
         username = getpass.getuser()
         file = fs.selected_get()
