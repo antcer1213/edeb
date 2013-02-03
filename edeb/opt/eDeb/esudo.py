@@ -26,19 +26,9 @@ def pw_error_popup(bt, win):
 #----eSudo
 class eSudo(object):
     def __init__( self, command=False, window=False, end_callback=False ):
-        if not window:
-            win = self.mainWindow = elementary.Window("esudo", elementary.ELM_WIN_DIALOG_BASIC)
-            win.title = "eSudo"
-            win.borderless = True
-            win.size_hint_weight = evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND
-            win.size_hint_align = evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL
-            win.resize(300, 200)
-            win.callback_delete_request_add(lambda o: elementary.exit())
-            win.show()
-            self.Window = True
-        else:
-            self.mainWindow = win = window
-            self.Window = False
+
+        self.mainWindow = win = window
+        self.Window = False
 
         self.cmd = command
         self.end_cb = end_callback if callable(end_callback) else None
@@ -175,24 +165,18 @@ class eSudo(object):
 
 #--------eSudo Cancel Button
     def esudo_cancel(self, bt, en):
+        logging.info("Command terminated before attempt was initiated.")
         en.entry = ""
         self.close()
 
     def close(self):
-        if self.Window:
-            elementary.exit()
-        else:
-            self.iw.delete()
+        self.iw.delete()
 
 #--------eSudo OK Button
     def esudo_ok(self, bt, en):
         password = en.entry_get()
-        if self.cmd:
-            logging.info("Starting %s" % self.cmd)
-            self.run_command("sudo -S %s" % (self.cmd), password)
-        else:
-            logging.info("Starting %s" % self.cmdline.entry_get())
-            self.run_command("sudo -S %s" % (self.cmdline.entry_get()), password)
+        logging.info("Starting %s" % self.cmd)
+        self.run_command("sudo -S %s" % (self.cmd), password)
 
     def run_command(self, command, password):
         self.cmd_exe = cmd = ecore.Exe(command, ecore.ECORE_EXE_PIPE_READ|ecore.ECORE_EXE_PIPE_ERROR|ecore.ECORE_EXE_PIPE_WRITE)
