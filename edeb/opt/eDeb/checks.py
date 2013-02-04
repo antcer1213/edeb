@@ -5,7 +5,7 @@ import evas, esudo
 import elementary as elm
 import debfile as debianfile
 import getpass, urllib2, commands
-from apt_inst import debExtractControl
+#~ from apt_inst import debExtractControl
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -66,7 +66,6 @@ def not_installable_popup(win):
     popup.show()
 
 def dependency_popup(win):
-    print "SHIT"
     popup = elm.Popup(win)
     popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
     popup.text = "<b>Urgent</b><br><br>Installation Semi-Finished. All dependencies were not met.<ps><ps>Click <b>Grab</> to attempt to grab the missing dependencies and complete the installation."
@@ -80,7 +79,7 @@ def finished_popup(win):
     popup = elm.Popup(win)
     popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
     popup.text = "<b>Installation Finished!</b><br><br>The installation was successful."
-    bt = elm.Button(self.win)
+    bt = elm.Button(win)
     bt.text = "OK"
     bt.callback_clicked_add(popup_close, popup)
     popup.part_content_set("button1", bt)
@@ -88,7 +87,6 @@ def finished_popup(win):
 
 #----Dependency Completion
 def dependency_comp(bt, popup, win):
-    print "hey"
     popup.delete()
     try:
         con = urllib2.urlopen("http://www.google.com/")
@@ -102,25 +100,22 @@ def dependency_comp(bt, popup, win):
         esudo.eSudo(dep_comp, win, end_callback=dep_cb)
 
 #---End Callbacks
-def dep_grab_cb(exit_code):
+def dep_grab_cb(exit_code, win):
     if exit_code == 0:
         logging.info("Successfully Grabbed Dependencies.")
         finished_dep_install_popup(win)
     else:
         logging.info("Something went wrong while installing dependencies.")
-def main_cb(exit_code):
+def main_cb(exit_code, win):
     if exit_code == 0:
         logging.info("Installation Completed!")
         finished_popup(win)
     else:
         logging.info("Something went wrong. Likely, dependencies that weren't met before attempting installation.")
-        print "damn"
         dependency_popup(win)
-        print "yo"
-def dep_cb(exit_code):
+def dep_cb(exit_code, win):
     if exit_code == 0:
         logging.info("Successfully Grabbed Dependencies & Completed Installation.")
-        #~ chk = Checks(file, win, end_callback=False)
         finished_popup(win)
     else:
         logging.info("Something went wrong while attempting to complete installation.")

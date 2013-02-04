@@ -202,9 +202,9 @@ class eSudo(object):
 
     def command_done(self, cmd, event, *args, **kwargs):
         logging.debug("Command done")
+        self.close()
         if self.end_cb:
             try:
-                self.end_cb(event.exit_code)
+                self.end_cb(event.exit_code, self.mainWindow)
             except:
                 pass
-        self.close()

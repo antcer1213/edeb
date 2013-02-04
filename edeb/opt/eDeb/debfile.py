@@ -476,33 +476,8 @@ class DebPackage(object):
         """Return missing dependencies."""
         self._dbg(1, "Installing: %s" % self._need_pkgs)
         if not self._check_was_run:
-            raise AttributeError("property only available after depends_check() was run")
+            raise AttributeError("property only available after depends_check() is ran")
         return self._need_pkgs
-
-    @property
-    def required_changes(self):
-        """Get the changes required to satisfy the dependencies.
-
-        Returns: a tuple with (install, remove, unauthenticated)
-        """
-        install = []
-        remove = []
-        unauthenticated = []
-        if not self._check_was_run:
-            raise AttributeError("property only available after check() was run")
-        for pkg in self._cache:
-            if pkg.marked_install or pkg.marked_upgrade:
-                install.append(pkg.name)
-                # check authentication, one authenticated origin is enough
-                # libapt will skip non-authenticated origins then
-                authenticated = False
-                for origin in pkg.candidate.origins:
-                    authenticated |= origin.trusted
-                if not authenticated:
-                    unauthenticated.append(pkg.name)
-            if pkg.marked_delete:
-                remove.append(pkg.name)
-        return (install, remove, unauthenticated)
 
     @staticmethod
     def to_hex(in_data):
