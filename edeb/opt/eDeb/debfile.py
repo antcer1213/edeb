@@ -1,10 +1,8 @@
-#  Copyright (c) 2005-2010 Canonical
-#
-#  Author: Michael Vogt <michael.vogt@ubuntu.com>
-#
-#  Revisions: Anthony "AntCer" Cervantes <bodhidocs@gmail.com>
+"""  Copyright (c) 2005-2010 Canonical
+  Author: Michael Vogt <michael.vogt@ubuntu.com>
 
-"""Classes for working with locally available Debian packages."""
+  Revisions: Anthony "AntCer" Cervantes <bodhidocs@gmail.com>"""
+
 import apt
 import apt_inst
 import apt_pkg
@@ -70,18 +68,6 @@ class DebPackage(object):
             return [_("List of files for '%s' could not be read") %
                     self.filename]
         return files
-
-    #~ @property
-    #~ def control_filelist(self):
-        #~ """ return the list of files in control.tar.gt """
-        #~ control = []
-        #~ try:
-            #~ self._debfile.control.go(lambda item, data: control.append(item.name))
-        #~ except SystemError:
-            #~ return [_("List of control files for '%s' could not be read") %
-                    #~ self.filename]
-        #~ return sorted(control)
-
 
     # helper that will return a pkgname with a multiarch suffix if needed
     def _maybe_append_multiarch_suffix(self, pkgname, 
