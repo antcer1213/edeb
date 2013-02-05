@@ -35,20 +35,20 @@ def buttons_main(obj, item=None):
         if mimetype == "application/x-debian-package":
             deb = debianfile.DebPackage(file, cache=None)
             if deb.check() ==  False:
-                fs.selected_set("/home/%s" %username) 
+                fs.selected_set("/home/%s" %username)
                 fs.path_set("/home/%s" %username)
                 checks.not_installable_popup(win)
             else:
                 chk = checks.Checks(file, win, end_callback=True)
                 chk.check_file(fs, win)
         elif file == "/home/%s" %username or file == "/home/%s/" %username:
-            fs.selected_set("/home/%s" %username) 
+            fs.selected_set("/home/%s" %username)
             fs.path_set("/home/%s" %username)
             checks.nofile_error_popup(win)
             return
         else:
             logging.info("Invalid file!")
-            fs.selected_set("/home/%s" %username) 
+            fs.selected_set("/home/%s" %username)
             fs.path_set("/home/%s" %username)
             checks.file_error_popup(win)
             return

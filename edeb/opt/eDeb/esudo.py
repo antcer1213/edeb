@@ -25,13 +25,17 @@ def pw_error_popup(bt, win):
 
 #----eSudo
 class eSudo(object):
-    def __init__( self, command=False, window=False, end_callback=False ):
+    def __init__( self, command=None, window=None, start_callback=None, end_callback=None, *args, **kwargs ):
 
-        self.mainWindow = win = window
+        self.mainWindow = self.win = win = window
         self.Window = False
 
         self.cmd = command
+        self.start_cb = start_callback if callable(start_callback) else None
         self.end_cb = end_callback if callable(end_callback) else None
+
+        self.args = args
+        self.kwargs = kwargs
 
 #--------eSudo Window
 
@@ -188,6 +192,11 @@ class eSudo(object):
     def command_started(self, cmd, event, *args, **kwargs):
         logging.debug("Command started")
         logging.debug(cmd)
+        if self.start_cb:
+            try:
+                self.start_cb(self.iw, self.mainWindow, *self.args, **self.kwargs)
+            except:
+                logging.exception("Exception while running start_cb")
 
     def received_data(self, cmd, event, *args, **kwargs):
         logging.debug("Received data")
@@ -202,9 +211,8 @@ class eSudo(object):
 
     def command_done(self, cmd, event, *args, **kwargs):
         logging.debug("Command done")
-        self.close()
         if self.end_cb:
             try:
-                self.end_cb(event.exit_code, self.mainWindow)
+                self.end_cb(event.exit_code, self.mainWindow, *self.args, **self.kwargs)
             except:
-                pass
+                logging.exception("Exception while running end_cb")

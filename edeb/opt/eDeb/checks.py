@@ -71,7 +71,7 @@ def dependency_popup(win):
     popup.text = "<b>Urgent</b><br><br>Installation Semi-Finished. All dependencies were not met.<ps><ps>Click <b>Grab</> to attempt to grab the missing dependencies and complete the installation."
     bt = elm.Button(win)
     bt.text = "Grab"
-    bt.callback_clicked_add(dependency_comp, win)
+    bt.callback_clicked_add(dependency_comp, popup, win)
     popup.part_content_set("button1", bt)
     popup.show()
 
@@ -97,29 +97,75 @@ def dependency_comp(bt, popup, win):
     else:
         logging.info("Starting attempt to fulfill dependencies:")
         dep_comp = "apt-get -f install -y"
-        esudo.eSudo(dep_comp, win, end_callback=dep_cb)
+        n = elm.Notify(win)
+        esudo.eSudo(dep_comp, win, start_callback=start_cb, end_callback=dep_cb, data=n)
 
 #---End Callbacks
-def dep_grab_cb(exit_code, win):
+def dep_grab_cb(exit_code, win, *args, **kwargs):
+    n = kwargs["data"]
+    n.delete()
+    logging.info("Wait Screen deleted")
     if exit_code == 0:
         logging.info("Successfully Grabbed Dependencies.")
         finished_dep_install_popup(win)
     else:
         logging.info("Something went wrong while installing dependencies.")
-def main_cb(exit_code, win):
+def main_cb(exit_code, win, *args, **kwargs):
+    n = kwargs["data"]
+    n.delete()
+    logging.info("Wait Screen deleted")
     if exit_code == 0:
         logging.info("Installation Completed!")
         finished_popup(win)
     else:
         logging.info("Something went wrong. Likely, dependencies that weren't met before attempting installation.")
         dependency_popup(win)
-def dep_cb(exit_code, win):
+def dep_cb(exit_code, win, *args, **kwargs):
+    n = kwargs["data"]
+    n.delete()
+    logging.info("Wait Screen deleted")
     if exit_code == 0:
         logging.info("Successfully Grabbed Dependencies & Completed Installation.")
         finished_popup(win)
     else:
         logging.info("Something went wrong while attempting to complete installation.")
 
+#---Start Callback
+def start_cb(iw, win, *args, **kwargs):
+    iw.delete()
+
+    logging.info("Wait Screen initiated")
+    n = kwargs["data"]
+
+    box = elm.Box(win)
+    box.size_hint_weight = evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND
+    box.size_hint_align = evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL
+
+    lb = elm.Label(win)
+    lb.text = "<b>Please wait...</b>"
+    lb.size_hint_align = 0.0, 0.5
+    box.pack_end(lb)
+    lb.show()
+
+    sep = elm.Separator(win)
+    sep.horizontal = True
+    box.pack_end(sep)
+    sep.show()
+
+    pb = elm.Progressbar(win)
+    pb.style = "wheel"
+    pb.pulse(True)
+    pb.size_hint_weight = evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND
+    pb.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+    box.pack_end(pb)
+    pb.show()
+
+    box.show()
+
+    n.orient = elm.ELM_NOTIFY_ORIENT_CENTER
+    n.allow_events_set(False)
+    n.content = box
+    n.show()
 
 
 
@@ -164,7 +210,8 @@ class Checks(object):
                 missdep = separator_string.join(missingdep)
                 logging.info("Starting Dependency Grab:")
                 dep_grab = "apt-get --no-install-recommends install -y %s" %(missdep)
-                esudo.eSudo(dep_grab, win, end_callback=dep_grab_cb)
+                n = elm.Notify(win)
+                esudo.eSudo(dep_grab, win, start_callback=start_cb, end_callback=dep_grab_cb, data=n)
 
         def compare(btn, pkg_info_en):
             debcompare = deb.compare_to_version_in_cache(use_installed=True)
@@ -346,7 +393,8 @@ class Checks(object):
         if mimetype == "application/x-debian-package":
             logging.info(self.file)
             install_deb = 'dpkg -i %s'%self.file
-            esudo.eSudo(install_deb, win, end_callback=main_cb)
+            n = elm.Notify(win)
+            esudo.eSudo(install_deb, win, start_callback=start_cb, end_callback=main_cb, data=n)
         elif self.file == "/home/%s" %username or self.file == "/home/%s/" %username:
             nofile_error_popup(win)
             return
