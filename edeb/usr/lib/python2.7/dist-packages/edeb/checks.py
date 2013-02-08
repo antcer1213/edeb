@@ -3,6 +3,7 @@ import string
 import re
 import logging
 import mimetypes
+import gc
 import evas, esudo
 import elementary as elm
 from gettext import gettext
@@ -17,6 +18,7 @@ def popup_close(btn, popup):
 
 def iw_close(bt, iw):
     iw.delete()
+    gc.collect()
 
 #----Popups
 def nofile_error_popup(win):
@@ -110,6 +112,7 @@ def dep_grab_cb(exit_code, win, *args, **kwargs):
     if exit_code == 0:
         logging.info("Successfully Grabbed Dependencies.")
         finished_dep_install_popup(win)
+        gc.collect()
     else:
         logging.info("Something went wrong while installing dependencies.")
 def main_cb(exit_code, win, *args, **kwargs):
@@ -119,6 +122,7 @@ def main_cb(exit_code, win, *args, **kwargs):
     if exit_code == 0:
         logging.info("Installation Completed!")
         finished_popup(win)
+        gc.collect()
     else:
         logging.info("Something went wrong. Likely, dependencies that weren't met before attempting installation.")
         dependency_popup(win)
@@ -129,6 +133,7 @@ def dep_cb(exit_code, win, *args, **kwargs):
     if exit_code == 0:
         logging.info("Successfully Grabbed Dependencies & Completed Installation.")
         finished_popup(win)
+        gc.collect()
     else:
         logging.info("Something went wrong while attempting to complete installation.")
 
