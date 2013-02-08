@@ -24,7 +24,7 @@ Started: January 17, 2013
 import sys
 import argparse
 parser = argparse.ArgumentParser(description='A deb-package installer built on Python-EFLs.')
-parser.add_argument("deb", metavar="file", type=str, nargs=1,
+parser.add_argument("deb", metavar="file", type=str, nargs="*",
                     help="Debian package to initially load.")
 clargs = parser.parse_args(sys.argv[1:])
 
