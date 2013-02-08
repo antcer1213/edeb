@@ -1,11 +1,11 @@
 [Desktop Entry]
 Hidden=false
-Exec=python /opt/eDeb/edeb.py
+Exec=edeb
 Icon=gnome-mime-application-x-deb
 Type=Application
 Categories=System;
 MimeType=application/x-deb;application/x-debian-package;
-NoDisplay=true
+NoDisplay=false
 StartupNotify=true
 Comment=A simple interface to install .deb files.
 Terminal=false

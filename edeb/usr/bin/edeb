@@ -1,2 +1,10 @@
-#!/bin/bash
-python /opt/eDeb/edeb.py
+#!/usr/bin/python
+
+import sys
+import elementary as elm
+import edeb.edeb as eDeb
+
+elm.init()
+edeb = eDeb.buttons_main(sys.argv[1:])
+elm.run()
+elm.shutdown()
