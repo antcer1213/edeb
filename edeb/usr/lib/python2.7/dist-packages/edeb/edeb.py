@@ -23,8 +23,8 @@ Started: January 17, 2013
 
 import sys
 import argparse
-parser = argparse.ArgumentParser(description='Not sure what to put in here.')
-parser.add_argument("deb", metavar="file", type=str, nargs="*",
+parser = argparse.ArgumentParser(description='A deb-package installer built on Python-EFLs.')
+parser.add_argument("deb", metavar="file", type=str, nargs=1,
                     help="Debian package to initially load.")
 clargs = parser.parse_args(sys.argv[1:])
 
@@ -140,7 +140,7 @@ class buttons_main(object):
             self.fs.path_set("/home/%s" %username)
             checks.file_error_popup(self.win)
             return
-        
+
 
     def init_check(self, fs, bt, win):
         file = self.fs.selected_get()
