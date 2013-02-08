@@ -8,7 +8,6 @@ import elementary as elm
 from gettext import gettext
 import debfile as debianfile
 import getpass, urllib2, commands
-#~ from apt_inst import debExtractControl
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -182,17 +181,8 @@ class Checks(object):
 #----Package Info
     def pkg_information(self, win):
         deb = debianfile.DebPackage(self.file, cache=None)
-        #~ control = debExtractControl(open(self.file))
-        #~ filing = u'%s' %control
-        pkg_name = commands.getoutput("dpkg -f %s | awk '/Package:/'" %self.file)
-        pkg_ver  = commands.getoutput("dpkg -f %s | awk '/Version:/'" %self.file)
-        pkg_sec  = commands.getoutput("dpkg -f %s | awk '/Section:/'" %self.file)
-        pkg_pri  = commands.getoutput("dpkg -f %s | awk '/Priority:/'" %self.file)
-        pkg_dep  = commands.getoutput("dpkg -f %s | sed 's/<</less than/' | awk '/Depends:/' | sed 's/Depends:/ /' | sed 's/Pre-/ /'" %self.file)
-        pkg_arch = commands.getoutput("dpkg -f %s | awk '/Architecture:/'" %self.file)
-        pkg_size = commands.getoutput("dpkg -f %s | awk '/Installed-Size:/'" %self.file)
-        pkg_auth = commands.getoutput("dpkg -f %s | awk '/Maintainer:/'" %self.file)
 
+#----------------Desc
         long_desc = ""
         raw_desc = string.split(deb["Description"], "\n")
         # append a newline to the summary in the first line
@@ -210,9 +200,61 @@ class Checks(object):
         long_desc = p.sub(" ", long_desc)
         p = re.compile(r'\s\s+', re.MULTILINE)
         summary = p.sub("<br>", long_desc)
-        long_desc = "<b>Description:</><br>%s" % summary
+        long_desc = "<br><b>Description:</> %s<br>" % summary
         pkg_desc = long_desc
+#----------------Name
+        long_desc = ""
+        raw_desc = string.split(deb["Package"], "\n")
+        # append a newline to the summary in the first line
+        summary = raw_desc[0]
+        raw_desc[0] = ""
+        long_desc = "<b>Package:</> %s" % summary
+        pkg_name = long_desc
+#----------------Auth
+        long_desc = ""
+        raw_desc = string.split(deb["Maintainer"], "\n")
+        # append a newline to the summary in the first line
+        summary = raw_desc[0]
+        raw_desc[0] = ""
+        long_desc = "<b>Maintainer:</> %s" % summary
+        pkg_auth = long_desc
+#----------------Ver
+        long_desc = ""
+        raw_desc = string.split(deb["Version"], "\n")
+        # append a newline to the summary in the first line
+        summary = raw_desc[0]
+        raw_desc[0] = ""
+        long_desc = "<b>Version:</> %s" % summary
+        pkg_ver = long_desc
+#----------------Arch
+        long_desc = ""
+        raw_desc = string.split(deb["Architecture"], "\n")
+        # append a newline to the summary in the first line
+        summary = raw_desc[0]
+        raw_desc[0] = ""
+        long_desc = "<b>Architecture:</> %s" % summary
+        pkg_arch = long_desc
+#----------------Sec
+        long_desc = ""
+        raw_desc = string.split(deb["Section"], "\n")
+        # append a newline to the summary in the first line
+        summary = raw_desc[0]
+        raw_desc[0] = ""
+        long_desc = "<b>Section:</> %s" % summary
+        pkg_sec = long_desc
+#----------------Pri
+        long_desc = ""
+        raw_desc = string.split(deb["Priority"], "\n")
+        # append a newline to the summary in the first line
+        summary = raw_desc[0]
+        raw_desc[0] = ""
+        long_desc = "<b>Priority:</> %s" % summary
+        pkg_pri = long_desc
 
+
+
+        pkg_dep  = commands.getoutput("dpkg -f %s | sed 's/<</less than/' | awk '/Depends:/' | sed 's/Depends:/ /' | sed 's/Pre-/ /'" %self.file)
+        pkg_size = commands.getoutput("dpkg -f %s | awk '/Installed-Size:/'" %self.file)
         pkg_recc = commands.getoutput("dpkg -f %s | awk '/Recommends:/'" %self.file)
         pkg_conf = commands.getoutput("dpkg -f %s | awk '/Conflicts:/'" %self.file)
         pkg_repl = commands.getoutput("dpkg -f %s | awk '/Replaces:/'" %self.file)
@@ -291,16 +333,14 @@ class Checks(object):
                 bt.show()
 
         def info(btn, pkg_info_en):
-            pkg_info_en.entry_set("%s<ps>%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps>%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s" \
-                            %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_size, pkg_sec, pkg_pri, pkg_desc, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
-            #~ pkg_info_en.entry_set("%s<ps>" \
-                            #~ %(filing))
+            pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><b>Extra Information:</><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s" \
+                            %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_sec, pkg_pri, pkg_desc, pkg_size, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
 
         def files(btn, pkg_info_en):
             filestosort = deb.filelist
-            separator_string = " , "
+            separator_string = "<br>"
             filesinlist = separator_string.join(filestosort)
-            pkg_info_en.entry_set("%s<ps>" %filesinlist)
+            pkg_info_en.entry_set("<b>Files:</><ps>%s<ps>" %filesinlist)
 
 
         pkgbox = elm.Box(self.win)
@@ -317,10 +357,8 @@ class Checks(object):
         pkg_info_en.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         pkg_info_en.editable_set(False)
         pkg_info_en.scrollable_set(True)
-        pkg_info_en.entry_set("%s<ps>%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps>%s<ps><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s" \
-                            %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_size, pkg_sec, pkg_pri, pkg_desc, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
-        #~ pkg_info_en.entry_set("%s<ps>" \
-                            #~ %(filing))
+        pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><b>Extra Information:</><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s" \
+                            %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_sec, pkg_pri, pkg_desc, pkg_size, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
 
         pkgbox.pack_end(pkg_info_en)
         pkg_info_en.show()

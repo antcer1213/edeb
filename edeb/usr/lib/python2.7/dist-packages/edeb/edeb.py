@@ -38,7 +38,7 @@ class buttons_main(object):
         win.callback_delete_request_add(lambda o: elm.exit())
 
         vbox = elm.Box(win)
-        vbox.padding_set(5, 20)
+        vbox.padding_set(5, 30)
         vbox.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         vbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         vbox.show()
@@ -99,7 +99,7 @@ class buttons_main(object):
         sep.show()
 
         win.resize_object_add(vbox)
-        win.resize(425, 200)
+        win.resize(425, 230)
         win.show()
 
 #-------Add deb from CLI
@@ -113,16 +113,20 @@ class buttons_main(object):
         username = getpass.getuser()
         self.fs.path_set("%s" %file)
         self.fs.selected_set("%s" %file)
+        logging.info("Loading %s..." %file)
         file = self.fs.selected_get()
         deb = file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
+        logging.info("Starting initial check...")
         if mimetype == "application/x-debian-package":
             deb = debianfile.DebPackage(file, cache=None)
             if deb.check() ==  False:
+                logging.info("Initial check failed.")
                 self.fs.selected_set("/home/%s" %username)
                 self.fs.path_set("/home/%s" %username)
                 checks.not_installable_popup(self.win)
             else:
+                logging.info("Initial check passed.")
                 chk = checks.Checks(file, self.win, end_callback=True)
                 chk.check_file(self.fs, self.win)
         elif file == "/home/%s" %username or file == "/home/%s/" %username:
@@ -140,16 +144,20 @@ class buttons_main(object):
 
     def init_check(self, fs, bt, win):
         file = self.fs.selected_get()
+        logging.info("Loading %s..." %file)
         username = getpass.getuser()
         deb = file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
+        logging.info("Starting initial check...")
         if mimetype == "application/x-debian-package":
             deb = debianfile.DebPackage(file, cache=None)
             if deb.check() ==  False:
+                logging.info("Initial check failed.")
                 self.fs.selected_set("/home/%s" %username)
                 self.fs.path_set("/home/%s" %username)
                 checks.not_installable_popup(self.win)
             else:
+                logging.info("Initial check passed.")
                 chk = checks.Checks(file, self.win, end_callback=True)
                 chk.check_file(self.fs, self.win)
         elif file == "/home/%s" %username or file == "/home/%s/" %username:
@@ -166,6 +174,7 @@ class buttons_main(object):
 
     def bt_init_check(self, bt, win):
         file = self.fs.selected_get()
+        logging.info("Loading %s information..." %file)
         chk = checks.Checks(file, self.win, end_callback=True)
         chk.check_file(self.fs, self.win)
 
