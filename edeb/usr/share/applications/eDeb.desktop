@@ -1,0 +1,14 @@
+[Desktop Entry]
+Hidden=false
+Exec=edeb
+Icon=gnome-mime-application-x-deb
+Type=Application
+Categories=System;
+MimeType=application/x-deb;application/x-debian-package;
+NoDisplay=false
+StartupNotify=true
+Comment=A simple interface to install .deb files.
+Terminal=false
+Name=eDeb
+GenericName=Package Installer
+Comment[en_US]=A simple interface to install .deb files.
