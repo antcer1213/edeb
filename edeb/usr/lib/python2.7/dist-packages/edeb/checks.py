@@ -7,9 +7,9 @@ import evas, esudo
 import elementary as elm
 from gettext import gettext
 import debfile as debianfile
-import getpass, urllib2, commands
+import urllib2, commands
 logging.basicConfig(level=logging.DEBUG)
-
+HOME = os.getenv("HOME")
 
 #----Common
 def popup_close(btn, popup):
@@ -433,13 +433,12 @@ class Checks(object):
 
 #----Checks
     def check_file(self, fs, win):
-        username = getpass.getuser()
         deb = self.file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
         if mimetype == "application/x-debian-package":
             self.pkg_information(self)
             return
-        elif self.file == "/home/%s" %username or self.file == "/home/%s/" %username:
+        elif self.file == HOME or self.file == "%s/" %HOME:
             nofile_error_popup(win)
             return
         else:
@@ -448,7 +447,6 @@ class Checks(object):
             return
 
     def check_file_install(self, bt, win):
-        username = getpass.getuser()
         deb = self.file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
         if mimetype == "application/x-debian-package":
@@ -456,7 +454,7 @@ class Checks(object):
             install_deb = 'dpkg -i %s'%self.file
             n = elm.Notify(win)
             esudo.eSudo(install_deb, win, start_callback=start_cb, end_callback=main_cb, data=n)
-        elif self.file == "/home/%s" %username or self.file == "/home/%s/" %username:
+        elif self.file == HOME or self.file == "%s/" %HOME:
             nofile_error_popup(win)
             return
         else:

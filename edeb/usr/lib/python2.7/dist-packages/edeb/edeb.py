@@ -5,7 +5,7 @@ import elementary as elm
 import evas
 import checks
 import logging
-import getpass, mimetypes
+import mimetypes
 import debfile as debianfile
 logging.basicConfig(level=logging.DEBUG)
 
@@ -27,7 +27,7 @@ parser = argparse.ArgumentParser(description='A deb-package installer built on P
 parser.add_argument("deb", metavar="file", type=str, nargs="*",
                     help="Debian package to initially load.")
 clargs = parser.parse_args(sys.argv[1:])
-
+HOME = os.getenv("HOME")
 
 
 class buttons_main(object):
@@ -59,7 +59,7 @@ class buttons_main(object):
         fs.window_title_set("Select a .deb file:")
         fs.expandable_set(False)
         fs.inwin_mode_set(False)
-        fs.path_set(os.getenv("HOME"))
+        fs.path_set(HOME)
         fs.callback_file_chosen_add(self.init_check, win)
         fs.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         fs.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
@@ -110,7 +110,6 @@ class buttons_main(object):
     def cli_add(self, text, fs):
         separator_string = " "
         file = separator_string.join(text)
-        username = getpass.getuser()
         self.fs.path_set("%s" %file)
         self.fs.selected_set("%s" %file)
         logging.info("Loading %s..." %file)
@@ -122,59 +121,55 @@ class buttons_main(object):
             deb = debianfile.DebPackage(file, cache=None)
             if deb.check() ==  False:
                 logging.info("Initial check failed.")
-                self.fs.selected_set("/home/%s" %username)
-                self.fs.path_set("/home/%s" %username)
+                self.fs.selected_set(HOME)
+                self.fs.path_set(HOME)
                 checks.not_installable_popup(self.win)
             else:
                 logging.info("Initial check passed.")
                 chk = checks.Checks(file, self.win, end_callback=True)
                 chk.check_file(self.fs, self.win)
-        elif file == "/home/%s" %username or file == "/home/%s/" %username:
-            self.fs.selected_set("/home/%s" %username)
-            self.fs.path_set("/home/%s" %username)
-            checks.nofile_error_popup(self.win)
+        elif file == HOME or file == "%s/" %HOME:
+            self.fs.selected_set(HOME)
+            self.fs.path_set(HOME)
             return
         else:
             logging.info("Invalid file!")
-            self.fs.selected_set("/home/%s" %username)
-            self.fs.path_set("/home/%s" %username)
+            self.fs.selected_set(HOME)
+            self.fs.path_set(HOME)
             checks.file_error_popup(self.win)
             return
 
 
     def init_check(self, fs, bt, win):
         file = self.fs.selected_get()
-        logging.info("Loading %s..." %file)
-        username = getpass.getuser()
         deb = file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
-        logging.info("Starting initial check...")
         if mimetype == "application/x-debian-package":
             deb = debianfile.DebPackage(file, cache=None)
+            logging.info("Loading %s..." %file)
+            logging.info("Starting initial check...")
             if deb.check() ==  False:
                 logging.info("Initial check failed.")
-                self.fs.selected_set("/home/%s" %username)
-                self.fs.path_set("/home/%s" %username)
+                self.fs.selected_set(HOME)
+                self.fs.path_set(HOME)
                 checks.not_installable_popup(self.win)
             else:
                 logging.info("Initial check passed.")
                 chk = checks.Checks(file, self.win, end_callback=True)
                 chk.check_file(self.fs, self.win)
-        elif file == "/home/%s" %username or file == "/home/%s/" %username:
-            self.fs.selected_set("/home/%s" %username)
-            self.fs.path_set("/home/%s" %username)
-            checks.nofile_error_popup(self.win)
+        elif file == HOME or file == "%s/" %HOME:
+            self.fs.selected_set(HOME)
+            self.fs.path_set(HOME)
             return
         else:
             logging.info("Invalid file!")
-            self.fs.selected_set("/home/%s" %username)
-            self.fs.path_set("/home/%s" %username)
+            self.fs.selected_set(HOME)
+            self.fs.path_set(HOME)
             checks.file_error_popup(self.win)
             return
 
     def bt_init_check(self, bt, win):
         file = self.fs.selected_get()
-        logging.info("Loading %s information..." %file)
         chk = checks.Checks(file, self.win, end_callback=True)
         chk.check_file(self.fs, self.win)
 
