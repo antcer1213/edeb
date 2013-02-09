@@ -255,16 +255,83 @@ class Checks(object):
         raw_desc[0] = ""
         long_desc = "<b>Priority:</> %s" % summary
         pkg_pri = long_desc
+#----------------Size
+        try:
+            deb["Installed-Size"]
+            long_desc = ""
+            raw_desc = string.split(deb["Installed-Size"] + " KiB", "\n")
+            # append a newline to the summary in the first line
+            summary = raw_desc[0]
+            raw_desc[0] = ""
+            long_desc = "<b>Installed-Size:</> %s<ps>" % summary
+            pkg_size = long_desc
+        except:
+            pkg_size = ""
+#----------------Recc
+        try:
+            deb["Recommends"]
+            long_desc = ""
+            raw_desc = string.split(deb["Recommends"], "\n")
+            # append a newline to the summary in the first line
+            summary = raw_desc[0]
+            raw_desc[0] = ""
+            long_desc = "<b>Recommends:</> %s<ps>" % summary
+            pkg_recc = long_desc
+        except:
+            pkg_recc = ""
+#----------------Conf
+        try: 
+            deb["Conflicts"]
+            long_desc = ""
+            raw_desc = string.split(deb["Conflicts"], "\n")
+            # append a newline to the summary in the first line
+            summary = raw_desc[0]
+            raw_desc[0] = ""
+            long_desc = "<b>Conflicts:</> %s<ps>" % summary
+            pkg_conf = long_desc
+        except:
+            pkg_conf = ""
+#----------------Repl
+        try: 
+            deb["Replaces"]
+            long_desc = ""
+            raw_desc = string.split(deb["Replaces"], "\n")
+            # append a newline to the summary in the first line
+            summary = raw_desc[0]
+            raw_desc[0] = ""
+            long_desc = "<b>Replaces:</> %s<ps>" % summary
+            pkg_repl = long_desc
+        except:
+            pkg_repl = ""
+#----------------Prov
+        try:
+            deb["Provides"]
+            long_desc = ""
+            raw_desc = string.split(deb["Provides"], "\n")
+            # append a newline to the summary in the first line
+            summary = raw_desc[0]
+            raw_desc[0] = ""
+            long_desc = "<b>Provides:</> %s<ps>" % summary
+            pkg_prov = long_desc
+        except:
+            pkg_prov = ""
+#----------------HP
+        try:
+            deb["Homepage"]
+            long_desc = ""
+            raw_desc = string.split(deb["Homepage"], "\n")
+            # append a newline to the summary in the first line
+            summary = raw_desc[0]
+            raw_desc[0] = ""
+            long_desc = "<b>Homepage:</> %s" % summary
+            pkg_hp = long_desc
+        except:
+            pkg_hp = ""
 
-
+        if pkg_hp == "" and pkg_size == "" and pkg_recc == "" and pkg_prov == "" and pkg_conf == "" and pkg_repl == "":
+            pkg_size = "None"
 
         pkg_dep  = commands.getoutput("dpkg -f %s | sed 's/<</less than/' | awk '/Depends:/' | sed 's/Depends:/ /' | sed 's/Pre-/ /'" %self.file)
-        pkg_size = commands.getoutput("dpkg -f %s | awk '/Installed-Size:/'" %self.file)
-        pkg_recc = commands.getoutput("dpkg -f %s | awk '/Recommends:/'" %self.file)
-        pkg_conf = commands.getoutput("dpkg -f %s | awk '/Conflicts:/'" %self.file)
-        pkg_repl = commands.getoutput("dpkg -f %s | awk '/Replaces:/'" %self.file)
-        pkg_prov = commands.getoutput("dpkg -f %s | awk '/Provides:/'" %self.file)
-        pkg_hp   = commands.getoutput("dpkg -f %s | awk '/Homepage:/'" %self.file)
 
         def dependency_grab(bt, win):
             try:
@@ -338,7 +405,7 @@ class Checks(object):
                 bt.show()
 
         def info(btn, pkg_info_en):
-            pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><b>Extra Information:</><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s" \
+            pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps><b><u>Extra Information:</u></b><ps>%s%s%s%s%s%s" \
                             %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_sec, pkg_pri, pkg_desc, pkg_size, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
 
         def files(btn, pkg_info_en):
@@ -362,7 +429,7 @@ class Checks(object):
         pkg_info_en.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         pkg_info_en.editable_set(False)
         pkg_info_en.scrollable_set(True)
-        pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><b>Extra Information:</><ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s" \
+        pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps><b><i>Extra Information:</i></b><ps>%s%s%s%s%s%s" \
                             %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_sec, pkg_pri, pkg_desc, pkg_size, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
 
         pkgbox.pack_end(pkg_info_en)
