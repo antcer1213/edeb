@@ -210,49 +210,37 @@ class Checks(object):
 #----------------Name
         long_desc = ""
         raw_desc = string.split(deb["Package"], "\n")
-        # append a newline to the summary in the first line
         summary = raw_desc[0]
-        raw_desc[0] = ""
         long_desc = "<b>Package:</> %s" % summary
         pkg_name = long_desc
 #----------------Auth
         long_desc = ""
         raw_desc = string.split(deb["Maintainer"], "\n")
-        # append a newline to the summary in the first line
         summary = raw_desc[0]
-        raw_desc[0] = ""
         long_desc = "<b>Maintainer:</> %s" % summary
         pkg_auth = long_desc
 #----------------Ver
         long_desc = ""
         raw_desc = string.split(deb["Version"], "\n")
-        # append a newline to the summary in the first line
         summary = raw_desc[0]
-        raw_desc[0] = ""
         long_desc = "<b>Version:</> %s" % summary
         pkg_ver = long_desc
 #----------------Arch
         long_desc = ""
         raw_desc = string.split(deb["Architecture"], "\n")
-        # append a newline to the summary in the first line
         summary = raw_desc[0]
-        raw_desc[0] = ""
         long_desc = "<b>Architecture:</> %s" % summary
         pkg_arch = long_desc
 #----------------Sec
         long_desc = ""
         raw_desc = string.split(deb["Section"], "\n")
-        # append a newline to the summary in the first line
         summary = raw_desc[0]
-        raw_desc[0] = ""
         long_desc = "<b>Section:</> %s" % summary
         pkg_sec = long_desc
 #----------------Pri
         long_desc = ""
         raw_desc = string.split(deb["Priority"], "\n")
-        # append a newline to the summary in the first line
         summary = raw_desc[0]
-        raw_desc[0] = ""
         long_desc = "<b>Priority:</> %s" % summary
         pkg_pri = long_desc
 #----------------Size
@@ -260,9 +248,7 @@ class Checks(object):
             deb["Installed-Size"]
             long_desc = ""
             raw_desc = string.split(deb["Installed-Size"] + " KiB", "\n")
-            # append a newline to the summary in the first line
             summary = raw_desc[0]
-            raw_desc[0] = ""
             long_desc = "<b>Installed-Size:</> %s<ps>" % summary
             pkg_size = long_desc
         except:
@@ -272,9 +258,7 @@ class Checks(object):
             deb["Recommends"]
             long_desc = ""
             raw_desc = string.split(deb["Recommends"], "\n")
-            # append a newline to the summary in the first line
             summary = raw_desc[0]
-            raw_desc[0] = ""
             long_desc = "<b>Recommends:</> %s<ps>" % summary
             pkg_recc = long_desc
         except:
@@ -284,9 +268,7 @@ class Checks(object):
             deb["Conflicts"]
             long_desc = ""
             raw_desc = string.split(deb["Conflicts"], "\n")
-            # append a newline to the summary in the first line
             summary = raw_desc[0]
-            raw_desc[0] = ""
             long_desc = "<b>Conflicts:</> %s<ps>" % summary
             pkg_conf = long_desc
         except:
@@ -296,9 +278,7 @@ class Checks(object):
             deb["Replaces"]
             long_desc = ""
             raw_desc = string.split(deb["Replaces"], "\n")
-            # append a newline to the summary in the first line
             summary = raw_desc[0]
-            raw_desc[0] = ""
             long_desc = "<b>Replaces:</> %s<ps>" % summary
             pkg_repl = long_desc
         except:
@@ -308,9 +288,7 @@ class Checks(object):
             deb["Provides"]
             long_desc = ""
             raw_desc = string.split(deb["Provides"], "\n")
-            # append a newline to the summary in the first line
             summary = raw_desc[0]
-            raw_desc[0] = ""
             long_desc = "<b>Provides:</> %s<ps>" % summary
             pkg_prov = long_desc
         except:
@@ -320,9 +298,7 @@ class Checks(object):
             deb["Homepage"]
             long_desc = ""
             raw_desc = string.split(deb["Homepage"], "\n")
-            # append a newline to the summary in the first line
             summary = raw_desc[0]
-            raw_desc[0] = ""
             long_desc = "<b>Homepage:</> %s" % summary
             pkg_hp = long_desc
         except:
