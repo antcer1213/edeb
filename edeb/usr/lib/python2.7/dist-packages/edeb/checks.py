@@ -4,6 +4,7 @@ import re
 import logging
 import mimetypes
 import gc
+from ecore import Idler
 import evas, esudo
 import elementary as elm
 from gettext import gettext

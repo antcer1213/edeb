@@ -3,6 +3,7 @@
 import os
 import elementary as elm
 import evas
+from ecore import Idler
 import checks
 import logging
 import mimetypes
@@ -28,6 +29,12 @@ parser.add_argument("deb", metavar="file", type=str, nargs="*",
                     help="Debian package to initially load.")
 clargs = parser.parse_args(sys.argv[1:])
 HOME = os.getenv("HOME")
+
+
+class idle_check(object):
+    def __init__(self, command=False, start_callback=None, end_callback=None):
+
+        idler = Idler(command, path_generator)
 
 
 class buttons_main(object):
@@ -107,6 +114,7 @@ class buttons_main(object):
             self.cli_add(clargs.deb, fs)
 
 #----Common
+
     def cli_add(self, text, fs):
         separator_string = " "
         file = separator_string.join(text)
