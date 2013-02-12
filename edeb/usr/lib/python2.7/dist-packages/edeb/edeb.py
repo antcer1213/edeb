@@ -31,10 +31,11 @@ clargs = parser.parse_args(sys.argv[1:])
 HOME = os.getenv("HOME")
 
 
-class idle_check(object):
-    def __init__(self, command=False, start_callback=None, end_callback=None):
-
-        idler = Idler(command, path_generator)
+class cli_idle_check(object):
+    def __init__(self, command=False):
+        clargs.deb = command
+        run = cli_add(clargs.deb)
+        idler = Idler(run)
 
 
 class buttons_main(object):
@@ -111,11 +112,11 @@ class buttons_main(object):
 
 #-------Add deb from CLI
         if clargs.deb:
-            self.cli_add(clargs.deb, fs)
+            cli_idle_check(clargs.deb)
 
 #----Common
 
-    def cli_add(self, text, fs):
+    def cli_add(self, text):
         separator_string = " "
         file = separator_string.join(text)
         self.fs.path_set("%s" %file)
