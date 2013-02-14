@@ -31,11 +31,6 @@ clargs = parser.parse_args(sys.argv[1:])
 HOME = os.getenv("HOME")
 
 
-class cli_idle_check(object):
-    def __init__(self, command=False):
-        clargs.deb = command
-        run = cli_add(clargs.deb)
-        idler = Idler(run)
 
 
 class buttons_main(object):
@@ -107,14 +102,31 @@ class buttons_main(object):
         sep.show()
 
         win.resize_object_add(vbox)
-        win.resize(425, 230)
+        win.resize(425, 245)
         win.show()
 
 #-------Add deb from CLI
         if clargs.deb:
-            cli_idle_check(clargs.deb)
+            self.cli_idle(clargs.deb, win)
 
 #----Common
+    def cli_idle(self, text, win):
+        self.n = n = elm.Notify(win)
+
+        pb = elm.Progressbar(win)
+        pb.style = "wheel"
+        pb.pulse(True)
+        pb.size_hint_weight = evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND
+        pb.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        pb.show()
+
+        n.orient = elm.ELM_NOTIFY_ORIENT_CENTER
+        n.allow_events_set(False)
+        n.content = pb
+        n.show()
+        
+        idler = Idler(self.cli_add, text)
+
 
     def cli_add(self, text):
         separator_string = " "
@@ -147,7 +159,7 @@ class buttons_main(object):
             self.fs.path_set(HOME)
             checks.file_error_popup(self.win)
             return
-
+        self.n.delete()
 
     def init_check(self, fs, bt, win):
         file = self.fs.selected_get()

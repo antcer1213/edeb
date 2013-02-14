@@ -4,7 +4,6 @@ import re
 import logging
 import mimetypes
 import gc
-from ecore import Idler
 import evas, esudo
 import elementary as elm
 from gettext import gettext
@@ -109,7 +108,6 @@ def dependency_comp(bt, popup, win):
 def dep_grab_cb(exit_code, win, *args, **kwargs):
     n = kwargs["data"]
     n.delete()
-    logging.info("Wait Screen deleted")
     if exit_code == 0:
         logging.info("Successfully Grabbed Dependencies.")
         finished_dep_install_popup(win)
@@ -119,7 +117,6 @@ def dep_grab_cb(exit_code, win, *args, **kwargs):
 def main_cb(exit_code, win, *args, **kwargs):
     n = kwargs["data"]
     n.delete()
-    logging.info("Wait Screen deleted")
     if exit_code == 0:
         logging.info("Installation Completed!")
         finished_popup(win)
@@ -130,7 +127,6 @@ def main_cb(exit_code, win, *args, **kwargs):
 def dep_cb(exit_code, win, *args, **kwargs):
     n = kwargs["data"]
     n.delete()
-    logging.info("Wait Screen deleted")
     if exit_code == 0:
         logging.info("Successfully Grabbed Dependencies & Completed Installation.")
         finished_popup(win)
@@ -142,7 +138,6 @@ def dep_cb(exit_code, win, *args, **kwargs):
 def start_cb(iw, win, *args, **kwargs):
     iw.delete()
 
-    logging.info("Wait Screen initiated")
     n = kwargs["data"]
 
     box = elm.Box(win)
@@ -248,7 +243,7 @@ class Checks(object):
         try:
             deb["Installed-Size"]
             long_desc = ""
-            raw_desc = string.split(deb["Installed-Size"] + " KiB", "\n")
+            raw_desc = string.split(deb["Installed-Size"] + " KB", "\n")
             summary = raw_desc[0]
             long_desc = "<b>Installed-Size:</> %s<ps>" % summary
             pkg_size = long_desc
