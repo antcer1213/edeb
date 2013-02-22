@@ -173,6 +173,7 @@ def start_cb(iw, win, *args, **kwargs):
 
 
 
+
 class Checks(object):
     def __init__(self, command=False, window=False, end_callback=False ):
         self.win = window
@@ -182,7 +183,6 @@ class Checks(object):
 #----Package Info
     def pkg_information(self, win):
         deb = debianfile.DebPackage(self.file, cache=None)
-
 #----------------Desc
         long_desc = ""
         raw_desc = string.split(deb["Description"], "\n")
@@ -260,7 +260,7 @@ class Checks(object):
         except:
             pkg_recc = ""
 #----------------Conf
-        try: 
+        try:
             deb["Conflicts"]
             long_desc = ""
             raw_desc = string.split(deb["Conflicts"], "\n")
@@ -270,7 +270,7 @@ class Checks(object):
         except:
             pkg_conf = ""
 #----------------Repl
-        try: 
+        try:
             deb["Replaces"]
             long_desc = ""
             raw_desc = string.split(deb["Replaces"], "\n")
@@ -299,11 +299,12 @@ class Checks(object):
             pkg_hp = long_desc
         except:
             pkg_hp = ""
-
-        if pkg_hp == "" and pkg_size == "" and pkg_recc == "" and pkg_prov == "" and pkg_conf == "" and pkg_repl == "":
-            pkg_size = "None"
-
+#----------------Dep
         pkg_dep  = commands.getoutput("dpkg -f %s | sed 's/<</less than/' | awk '/Depends:/' | sed 's/Depends:/ /' | sed 's/Pre-/ /'" %self.file)
+#----------------FB
+        if pkg_hp == "" and pkg_size == "" and pkg_recc == "" and pkg_prov == "" and pkg_conf == "" and pkg_repl == "":
+            pkg_size = "None<ps>"
+
 
         def dependency_grab(bt, win):
             try:
@@ -355,7 +356,7 @@ class Checks(object):
                 conflicting = deb.conflicts
                 pkg_info_en.entry_append("<ps> %s" %conflicting)
             else:
-                pkg_info_en.entry_set("<b>CLEAR:</> You are cleared to go. The selected file has passed ALL checks.")
+                pkg_info_en.entry_set("<b>CLEAR:</> You are cleared to go. The selected file has passed <b>ALL</> checks.")
 
         def depends(btn, pkg_info_en, bt):
             deb.depends_check()
@@ -377,7 +378,7 @@ class Checks(object):
                 bt.show()
 
         def info(btn, pkg_info_en):
-            pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps><b><u>Extra Information:</u></b><ps>%s%s%s%s%s%s" \
+            pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps><b><i>Extra Information:</i></b><ps>%s%s%s%s%s%s" \
                             %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_sec, pkg_pri, pkg_desc, pkg_size, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
 
         def files(btn, pkg_info_en):
@@ -494,7 +495,7 @@ class Checks(object):
         deb = self.file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
         if mimetype == "application/x-debian-package":
-            logging.info(self.file)
+            logging.info("Package: %s" %self.file)
             install_deb = 'dpkg -i %s'%self.file
             n = elm.Notify(win)
             esudo.eSudo(install_deb, win, start_callback=start_cb, end_callback=main_cb, data=n)

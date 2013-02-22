@@ -37,6 +37,8 @@ class eSudo(object):
         self.args = args
         self.kwargs = kwargs
 
+        self.blocked = blocked = False
+
 #--------eSudo Window
 
         bz = elementary.Box(win)
@@ -92,7 +94,7 @@ class eSudo(object):
         bz2.size_hint_weight = evas.EVAS_HINT_EXPAND, 0.0
         bz2.size_hint_align = evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL
 
-        bt = elementary.Button(win)
+        bt = self.bt = elementary.Button(win)
         bt.text = "Cancel"
         bt.callback_clicked_add(self.esudo_cancel, en)
         bt.size_hint_align = evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL
@@ -100,7 +102,7 @@ class eSudo(object):
         bz2.pack_end(bt)
         bt.show()
 
-        bt = elementary.Button(win)
+        bt = self.bt = elementary.Button(win)
         bt.text = "OK"
         bt.callback_clicked_add(self.password_check, en)
         bt.size_hint_align = evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL
@@ -119,15 +121,24 @@ class eSudo(object):
 
     def pw_entry_event(self, obj, entry, event_type, event, *args):
         if event_type == evas.EVAS_CALLBACK_KEY_UP:
-            if event.keyname == "Return":
-                self.password_check(None, entry)
-            elif event.keyname == "Escape":
-                self.close()
-
+            if self.blocked:
+                return
+            else:
+                if event.keyname == "Return":
+                    self.password_check(None, entry)
+                elif event.keyname == "Escape":
+                    self.close()
+                self.blocked = True
+                self.cbtimer = ecore.Timer(1.1, self.extimer)
         return True
+
+    def extimer(self):
+        self.blocked = False
+        self.cbtimer.delete()
 
 #--------Password Checker
     def password_check(self, bt, en):
+        self.bt.disabled_set(True)
 
 #------------Sets Password
         def pam_conv(auth, query_list, userData):
@@ -157,6 +168,7 @@ class eSudo(object):
             auth.authenticate()
             auth.acct_mgmt()
         except PAM.error, resp:
+            self.bt.disabled_set(False)
             pw_error_popup(bt, self.mainWindow)
             en.entry = ""
             en.focus = True
@@ -165,11 +177,11 @@ class eSudo(object):
         except:
             logging.exception("Internal error! File bug report.")
         else:
-            self.esudo_ok(bt, en)
+            self.esudo_ok(en)
 
 #--------eSudo Cancel Button
     def esudo_cancel(self, bt, en):
-        logging.info("Command terminated before attempt was initiated.")
+        logging.info("Cancelled before initiated.")
         en.entry = ""
         self.close()
 
@@ -177,7 +189,7 @@ class eSudo(object):
         self.iw.delete()
 
 #--------eSudo OK Button
-    def esudo_ok(self, bt, en):
+    def esudo_ok(self, en):
         password = en.entry_get()
         logging.info("Starting %s" % self.cmd)
         self.run_command("sudo -S %s" % (self.cmd), password)
@@ -190,7 +202,7 @@ class eSudo(object):
         cmd.on_del_event_add(self.command_done)
 
     def command_started(self, cmd, event, *args, **kwargs):
-        logging.debug("Command started")
+        logging.debug("Command started:")
         logging.debug(cmd)
         if self.start_cb:
             try:
@@ -210,7 +222,7 @@ class eSudo(object):
         cmd.send(str(password)+"\n")
 
     def command_done(self, cmd, event, *args, **kwargs):
-        logging.debug("Command done")
+        logging.debug("Command done.")
         if self.end_cb:
             try:
                 self.end_cb(event.exit_code, self.mainWindow, *self.args, **self.kwargs)

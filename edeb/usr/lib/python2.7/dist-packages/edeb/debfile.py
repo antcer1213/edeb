@@ -429,10 +429,6 @@ class DebPackage(object):
             return False
         return True
 
-    def satisfy_depends_str(self, dependsstr):
-        """Satisfy the dependencies in the given string."""
-        return self._satisfy_depends(apt_pkg.parse_depends(dependsstr))
-
     def _satisfy_depends(self, depends):
         """Satisfy the dependencies."""
         # turn off MarkAndSweep via a action group (if available)
@@ -512,37 +508,7 @@ class DebPackage(object):
             return new_data
         return data
 
-    def control_content(self, name):
-        """ return the content of a specific control.tar.gz file """
-        try:
-            return self._get_content(self._debfile.control, name)
-        except LookupError:
-            return ""
-
-    def data_content(self, name):
-        """ return the content of a specific control.tar.gz file """
-        try:
-            return self._get_content(self._debfile.data, name)
-        except LookupError:
-            return ""
-
     def _dbg(self, level, msg):
         """Write debugging output to sys.stderr."""
         if level <= self.debug:
             print >> sys.stderr, msg
-
-    def install(self, install_progress=None):
-        """Install the package."""
-        if install_progress is None:
-            return os.spawnlp(os.P_WAIT, "dpkg", "dpkg", "-i", self.filename)
-        else:
-            try:
-                install_progress.start_update()
-            except AttributeError:
-                install_progress.startUpdate()
-            res = install_progress.run(self.filename)
-            try:
-                install_progress.finish_update()
-            except AttributeError:
-                install_progress.finishUpdate()
-            return res

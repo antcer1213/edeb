@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 import os
+import ecore
 import elementary as elm
 import evas
-from ecore import Idler
 import checks
 import logging
 import mimetypes
@@ -61,9 +61,9 @@ class buttons_main(object):
         fs.text_set("Select .deb file")
         fs.window_title_set("Select a .deb file:")
         fs.expandable_set(False)
-        fs.inwin_mode_set(False)
         fs.path_set(HOME)
-        fs.callback_file_chosen_add(self.init_check, win)
+        fs.callback_file_chosen_add(self.init_check)
+        fs.callback_activated_add(self.init_check, win)
         fs.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         fs.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         fsbox.pack_end(fs)
@@ -107,27 +107,19 @@ class buttons_main(object):
 
 #-------Add deb from CLI
         if clargs.deb:
-            self.cli_idle(clargs.deb, win)
+            self.et = ecore.Timer(0.07, self.cli_add, clargs.deb)
+
+            self.n = n = elm.Notify(self.win)
+            lb = elm.Label(self.win)
+            lb.text = "<b>Loading Package Information...</b>"
+            lb.size_hint_align = 0.0, 0.5
+            lb.show()
+            n.orient = elm.ELM_NOTIFY_ORIENT_CENTER
+            n.allow_events_set(False)
+            n.content = lb
+            n.show()
 
 #----Common
-    def cli_idle(self, text, win):
-        self.n = n = elm.Notify(win)
-
-        pb = elm.Progressbar(win)
-        pb.style = "wheel"
-        pb.pulse(True)
-        pb.size_hint_weight = evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND
-        pb.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        pb.show()
-
-        n.orient = elm.ELM_NOTIFY_ORIENT_CENTER
-        n.allow_events_set(False)
-        n.content = pb
-        n.show()
-        
-        idler = Idler(self.cli_add, text)
-
-
     def cli_add(self, text):
         separator_string = " "
         file = separator_string.join(text)
@@ -144,24 +136,28 @@ class buttons_main(object):
                 logging.info("Initial check failed.")
                 self.fs.selected_set(HOME)
                 self.fs.path_set(HOME)
+                self.n.delete()
                 checks.not_installable_popup(self.win)
             else:
                 logging.info("Initial check passed.")
                 chk = checks.Checks(file, self.win, end_callback=True)
                 chk.check_file(self.fs, self.win)
+                self.n.delete()
         elif file == HOME or file == "%s/" %HOME:
             self.fs.selected_set(HOME)
             self.fs.path_set(HOME)
+            self.n.delete()
             return
         else:
             logging.info("Invalid file!")
             self.fs.selected_set(HOME)
             self.fs.path_set(HOME)
             checks.file_error_popup(self.win)
+            self.n.delete()
             return
-        self.n.delete()
+        self.et.delete()
 
-    def init_check(self, fs, bt, win):
+    def init_check(self, fs, win):
         file = self.fs.selected_get()
         deb = file
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
