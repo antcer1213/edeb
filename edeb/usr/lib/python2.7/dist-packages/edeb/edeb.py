@@ -107,17 +107,22 @@ class buttons_main(object):
 
 #-------Add deb from CLI
         if clargs.deb:
-            self.et = ecore.Timer(0.07, self.cli_add, clargs.deb)
+            separator_string = " "
+            file = separator_string.join(clargs.deb)
+            if os.path.exists(file):
+                self.et = ecore.Timer(0.07, self.cli_add, clargs.deb)
 
-            self.n = n = elm.Notify(self.win)
-            lb = elm.Label(self.win)
-            lb.text = "<b>Loading Package Information...</b>"
-            lb.size_hint_align = 0.0, 0.5
-            lb.show()
-            n.orient = elm.ELM_NOTIFY_ORIENT_CENTER
-            n.allow_events_set(False)
-            n.content = lb
-            n.show()
+                self.n = n = elm.Notify(self.win)
+                lb = elm.Label(self.win)
+                lb.text = "<b>Loading Package Information...</b>"
+                lb.size_hint_align = 0.0, 0.5
+                lb.show()
+                n.orient = elm.ELM_NOTIFY_ORIENT_CENTER
+                n.allow_events_set(False)
+                n.content = lb
+                n.show()
+            else:
+                checks.file_noexist_popup(self.win)
 
 #----Common
     def cli_add(self, text):

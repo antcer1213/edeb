@@ -28,6 +28,13 @@ def nofile_error_popup(win):
     popup.timeout = 3.0
     popup.show()
 
+def file_noexist_popup(win):
+    popup = elm.Popup(win)
+    popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    popup.text = "<b>File does not exist</><br><br>Please select an appropriate file candidate for installation."
+    popup.timeout = 3.0
+    popup.show()
+
 def file_error_popup(win):
     popup = elm.Popup(win)
     popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
