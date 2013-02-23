@@ -18,7 +18,7 @@ import elementary
 #----Popups
 def pw_error_popup(bt, win):
     popup = elementary.Popup(win)
-    popup.size_hint_weight = evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND
+    popup.size_hint_weight = 1.0, 1.0
     popup.text = "<b>Error</><br><br>Incorrect Password!<br>Please try again."
     popup.timeout = 3.0
     popup.show()
@@ -40,9 +40,8 @@ class eSudo(object):
         self.blocked = blocked = False
 
 #--------eSudo Window
-
         bz = elementary.Box(win)
-        bz.size_hint_weight = evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND
+        bz.size_hint_weight = 1.0, 1.0
 
         fr = elementary.Frame(win)
         bz.pack_end(fr)
@@ -72,14 +71,14 @@ class eSudo(object):
         bz1.pack_end(lb)
         lb.show()
 
-        en = elementary.Entry(win)
-        en.elm_event_callback_add(self.pw_entry_event)
-        en.single_line = True
-        en.password = True
-        en.size_hint_weight = 0.5, 0.5
-        en.size_hint_align = 0.5, 0.5
-        bz1.pack_end(en)
-        en.show()
+        enpw = elementary.Entry(win)
+        enpw.elm_event_callback_add(self.pw_entry_event)
+        enpw.single_line = True
+        enpw.password = True
+        enpw.size_hint_weight = 0.5, 0.5
+        enpw.size_hint_align = 0.5, 0.5
+        bz1.pack_end(enpw)
+        enpw.show()
 
         sep = elementary.Separator(win)
         sep.horizontal = True
@@ -91,58 +90,53 @@ class eSudo(object):
 
         bz2 = elementary.Box(win)
         bz2.horizontal = True
-        bz2.size_hint_weight = evas.EVAS_HINT_EXPAND, 0.0
-        bz2.size_hint_align = evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL
+        bz2.size_hint_weight = 1.0, 0.0
+        bz2.size_hint_align = -1.0, -1.0
 
         bt = self.bt = elementary.Button(win)
         bt.text = "Cancel"
-        bt.callback_clicked_add(self.esudo_cancel, en)
-        bt.size_hint_align = evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL
-        bt.size_hint_weight = evas.EVAS_HINT_EXPAND, 0.0
+        bt.callback_clicked_add(self.esudo_cancel, enpw)
+        bt.size_hint_align = -1.0, -1.0
+        bt.size_hint_weight = 1.0, 0.0
         bz2.pack_end(bt)
         bt.show()
 
         bt = self.bt = elementary.Button(win)
         bt.text = "OK"
-        bt.callback_clicked_add(self.password_check, en)
-        bt.size_hint_align = evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL
-        bt.size_hint_weight = evas.EVAS_HINT_EXPAND, 0.0
+        bt.callback_clicked_add(self.password_check, enpw)
+        bt.size_hint_align = -1.0, -1.0
+        bt.size_hint_weight = 1.0, 0.0
         bz2.pack_end(bt)
         bt.show()
 
         bz.pack_end(bz2)
         bz2.show()
 
-        en.focus = True
+        enpw.focus = True
         self.iw = iw = elementary.InnerWindow(win)
         iw.content = bz
         iw.show()
         iw.activate()
 
     def pw_entry_event(self, obj, entry, event_type, event, *args):
-        if event_type == evas.EVAS_CALLBACK_KEY_UP:
-            if self.blocked:
-                return
-            else:
-                if event.keyname == "Return":
+        if event_type == 11:
+            if event.keyname == "Return":
+                if self.blocked:
+                    return
+                else:
+                    self.blocked = True
                     self.password_check(None, entry)
-                elif event.keyname == "Escape":
-                    self.close()
-                self.blocked = True
-                self.cbtimer = ecore.Timer(1.1, self.extimer)
+            elif event.keyname == "Escape":
+                self.close()
         return True
 
-    def extimer(self):
-        self.blocked = False
-        self.cbtimer.delete()
-
 #--------Password Checker
-    def password_check(self, bt, en):
+    def password_check(self, bt, enpw):
         self.bt.disabled_set(True)
 
 #------------Sets Password
         def pam_conv(auth, query_list, userData):
-            password = en.entry
+            password = enpw.entry
             resp = []
             for i in range(len(query_list)):
                 query, type = query_list[i]
@@ -170,32 +164,34 @@ class eSudo(object):
         except PAM.error, resp:
             self.bt.disabled_set(False)
             pw_error_popup(bt, self.mainWindow)
-            en.entry = ""
-            en.focus = True
+            enpw.entry = ""
+            enpw.focus = True
             logging.info("Invalid password! Please try again.")
+            self.blocked = False
             return
         except:
             logging.exception("Internal error! File bug report.")
         else:
-            self.esudo_ok(en)
+            self.esudo_ok(enpw)
 
 #--------eSudo Cancel Button
-    def esudo_cancel(self, bt, en):
+    def esudo_cancel(self, bt, enpw):
         logging.info("Cancelled before initiated.")
-        en.entry = ""
+        enpw.entry = ""
         self.close()
 
     def close(self):
         self.iw.delete()
+        self.blocked = None
 
 #--------eSudo OK Button
-    def esudo_ok(self, en):
-        password = en.entry_get()
+    def esudo_ok(self, enpw):
+        password = enpw.entry_get()
         logging.info("Starting %s" % self.cmd)
         self.run_command("sudo -S %s" % (self.cmd), password)
 
     def run_command(self, command, password):
-        self.cmd_exe = cmd = ecore.Exe(command, ecore.ECORE_EXE_PIPE_READ|ecore.ECORE_EXE_PIPE_ERROR|ecore.ECORE_EXE_PIPE_WRITE)
+        self.cmd_exe = cmd = ecore.Exe(command, 1|4|2)
         cmd.on_add_event_add(self.command_started)
         cmd.on_data_event_add(self.received_data, password)
         cmd.on_error_event_add(self.received_error, password)
@@ -206,7 +202,9 @@ class eSudo(object):
         logging.debug(cmd)
         if self.start_cb:
             try:
-                self.start_cb(self.iw, self.mainWindow, *self.args, **self.kwargs)
+                self.close()
+                self.blocked = True
+                self.start_cb(self.mainWindow, *self.args, **self.kwargs)
             except:
                 logging.exception("Exception while running start_cb")
 
@@ -223,6 +221,7 @@ class eSudo(object):
 
     def command_done(self, cmd, event, *args, **kwargs):
         logging.debug("Command done.")
+        self.blocked = None
         if self.end_cb:
             try:
                 self.end_cb(event.exit_code, self.mainWindow, *self.args, **self.kwargs)

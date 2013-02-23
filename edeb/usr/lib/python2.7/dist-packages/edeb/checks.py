@@ -2,11 +2,9 @@ import os
 import string
 import re
 import logging
-import mimetypes
 import gc
 import evas, esudo
 import elementary as elm
-from gettext import gettext
 import debfile as debianfile
 import urllib2, commands
 logging.basicConfig(level=logging.DEBUG)
@@ -23,28 +21,28 @@ def iw_close(bt, iw):
 #----Popups
 def nofile_error_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation."
     popup.timeout = 3.0
     popup.show()
 
 def file_noexist_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>File does not exist</><br><br>Please select an appropriate file candidate for installation."
     popup.timeout = 3.0
     popup.show()
 
 def file_error_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>Invalid File Format</><br><br>That is <em>not</> a .deb file!"
     popup.timeout = 3.0
     popup.show()
 
 def no_net_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>Error</><br><br>No internet access.<br>Please try again when connected to internet."
     bt = elm.Button(win)
     bt.text = "OK"
@@ -54,7 +52,7 @@ def no_net_popup(win):
 
 def finished_dep_install_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>Successful!</b><br><br>Missing dependencies successfully installed."
     bt = elm.Button(win)
     bt.text = "OK"
@@ -64,7 +62,7 @@ def finished_dep_install_popup(win):
 
 def not_installable_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>Error</b><br><br>This file has failed initial check. It cannot be installed.<br><br>This is most often caused by a previously broken installation. Click <b>Fix</b> to attempt to repair broken packages, then try again.<br><br>If this occurs again, then the file may be of the wrong architecture."
     bt = elm.Button(win)
     bt.text = "Fix"
@@ -78,7 +76,7 @@ def not_installable_popup(win):
 
 def dependency_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>Urgent</b><br><br>Installation Semi-Finished. All dependencies were not met.<ps><ps>Click <b>Grab</> to attempt to grab the missing dependencies and complete the installation."
     bt = elm.Button(win)
     bt.text = "Grab"
@@ -88,7 +86,7 @@ def dependency_popup(win):
 
 def finished_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>Installation Finished!</b><br><br>The installation was successful."
     bt = elm.Button(win)
     bt.text = "OK"
@@ -142,14 +140,12 @@ def dep_cb(exit_code, win, *args, **kwargs):
         logging.info("Something went wrong while attempting to complete installation.")
 
 #---Start Callback
-def start_cb(iw, win, *args, **kwargs):
-    iw.delete()
-
+def start_cb(win, *args, **kwargs):
     n = kwargs["data"]
 
     box = elm.Box(win)
-    box.size_hint_weight = evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND
-    box.size_hint_align = evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL
+    box.size_hint_weight = 1.0, 1.0
+    box.size_hint_align = -1.0, -1.0
 
     lb = elm.Label(win)
     lb.text = "<b>Please wait...</b>"
@@ -165,14 +161,14 @@ def start_cb(iw, win, *args, **kwargs):
     pb = elm.Progressbar(win)
     pb.style = "wheel"
     pb.pulse(True)
-    pb.size_hint_weight = evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND
-    pb.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+    pb.size_hint_weight = 1.0, 1.0
+    pb.size_hint_align_set(-1.0, -1.0)
     box.pack_end(pb)
     pb.show()
 
     box.show()
 
-    n.orient = elm.ELM_NOTIFY_ORIENT_CENTER
+    n.orient = 1
     n.allow_events_set(False)
     n.content = box
     n.show()
@@ -185,6 +181,8 @@ class Checks(object):
     def __init__(self, command=False, window=False, end_callback=False ):
         self.win = window
         self.file = command
+        self.depbtn = depbtn = False
+        self.depcheck = depcheck = False
         self.end_cb = end_callback if callable(end_callback) else None
 
 #----Package Info
@@ -366,7 +364,11 @@ class Checks(object):
                 pkg_info_en.entry_set("<b>CLEAR:</> You are cleared to go. The selected file has passed <b>ALL</> checks.")
 
         def depends(btn, pkg_info_en, bt):
-            deb.depends_check()
+            if self.depcheck:
+                pass
+            else:
+                self.depcheck = True
+                deb.depends_check()
             missingdep = deb.missing_deps
             separator_string = " , "
             missdep = separator_string.join(missingdep)
@@ -374,15 +376,20 @@ class Checks(object):
             if missingdep == []:
                 pkg_info_en.entry_append("None<ps>")
             else:
-                bt.disabled_set(True)
-                pkg_info_en.entry_append("%s<ps>" %missdep)
-                bt = elm.Button(self.win)
-                bt.text_set("Attempt to Install Missing Dependencies")
-                bt.callback_clicked_add(dependency_grab, self.win)
-                bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-                bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, 0.0)
-                pkgbox.pack_end(bt)
-                bt.show()
+                if self.depbtn:
+                    pkg_info_en.entry_append("%s<ps>" %missdep)
+                    return
+                else:
+                    pkg_info_en.entry_append("%s<ps>" %missdep)
+                    bt = elm.Button(self.win)
+                    bt.text_set("Attempt to Install Missing Dependencies")
+                    bt.callback_clicked_add(dependency_grab, self.win)
+                    bt.size_hint_align_set(-1.0, -1.0)
+                    bt.size_hint_weight_set(1.0, 0.0)
+                    pkgbox.pack_end(bt)
+                    bt.show()
+                    self.depbtn = True
+                    return
 
         def info(btn, pkg_info_en):
             pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps><b><i>Extra Information:</i></b><ps>%s%s%s%s%s%s" \
@@ -394,9 +401,14 @@ class Checks(object):
             filesinlist = separator_string.join(filestosort)
             pkg_info_en.entry_set("<b>Files:</><ps>%s<ps>" %filesinlist)
 
+        def closebtn(btn, iw):
+            self.depbtn = None
+            self.depcheck = None
+            iw_close(btn, iw)
+
 
         pkgbox = elm.Box(self.win)
-        pkgbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        pkgbox.size_hint_weight_set(1.0, 1.0)
 
         pkgfr = elm.Frame(self.win)
         pkgfr.text_set("Package Information:")
@@ -405,8 +417,8 @@ class Checks(object):
         pkg_info_en = elm.Entry(self.win)
         pkg_info_en.line_wrap_set(2)
         pkg_info_en.input_panel_return_key_disabled = False
-        pkg_info_en.size_hint_align_set(evas.EVAS_HINT_FILL, -1.0)
-        pkg_info_en.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        pkg_info_en.size_hint_align_set(-1.0, -1.0)
+        pkg_info_en.size_hint_weight_set(1.0, 1.0)
         pkg_info_en.editable_set(False)
         pkg_info_en.scrollable_set(True)
         pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps><b><i>Extra Information:</i></b><ps>%s%s%s%s%s%s" \
@@ -425,15 +437,15 @@ class Checks(object):
 
         btnbox = elm.Box(self.win)
         btnbox.horizontal = True
-        btnbox.size_hint_weight = (evas.EVAS_HINT_EXPAND, 0.0)
+        btnbox.size_hint_weight = (1.0, 0.0)
         pkgbox.pack_end(btnbox)
         btnbox.show()
 
         bt = elm.Button(self.win)
         bt.text = "Info"
         bt.tooltip_text_set("View general information")
-        bt.size_hint_align = (evas.EVAS_HINT_FILL, 0.0)
-        bt.size_hint_weight = (evas.EVAS_HINT_EXPAND, 0.0)
+        bt.size_hint_align = (-1.0, 0.0)
+        bt.size_hint_weight = (1.0, 0.0)
         bt.callback_clicked_add(info, pkg_info_en)
         btnbox.pack_end(bt)
         bt.show()
@@ -441,8 +453,8 @@ class Checks(object):
         bt = elm.Button(self.win)
         bt.text = "Compare"
         bt.tooltip_text_set("Compare version with the repo/installed versions")
-        bt.size_hint_align = (evas.EVAS_HINT_FILL, 0.0)
-        bt.size_hint_weight = (evas.EVAS_HINT_EXPAND, 0.0)
+        bt.size_hint_align = (-1.0, 0.0)
+        bt.size_hint_weight = (1.0, 0.0)
         bt.callback_clicked_add(compare, pkg_info_en)
         btnbox.pack_end(bt)
         bt.show()
@@ -450,8 +462,8 @@ class Checks(object):
         bt = elm.Button(self.win)
         bt.text = "Checks"
         bt.tooltip_text_set("Check for conflicts/breaks if installed")
-        bt.size_hint_align = (evas.EVAS_HINT_FILL, 0.0)
-        bt.size_hint_weight = (evas.EVAS_HINT_EXPAND, 0.0)
+        bt.size_hint_align = (-1.0, 0.0)
+        bt.size_hint_weight = (1.0, 0.0)
         bt.callback_clicked_add(checks, pkg_info_en)
         btnbox.pack_end(bt)
         bt.show()
@@ -459,8 +471,8 @@ class Checks(object):
         bt = elm.Button(self.win)
         bt.text = "Depends"
         bt.tooltip_text_set("Display dependencies and missing dependencies")
-        bt.size_hint_align = (evas.EVAS_HINT_FILL, 0.0)
-        bt.size_hint_weight = (evas.EVAS_HINT_EXPAND, 0.0)
+        bt.size_hint_align = (-1.0, 0.0)
+        bt.size_hint_weight = (1.0, 0.0)
         bt.callback_clicked_add(depends, pkg_info_en, bt)
         btnbox.pack_end(bt)
         bt.show()
@@ -468,48 +480,36 @@ class Checks(object):
         bt = elm.Button(self.win)
         bt.text = "Files"
         bt.tooltip_text_set("View the file-listing")
-        bt.size_hint_align = (evas.EVAS_HINT_FILL, 0.0)
-        bt.size_hint_weight = (evas.EVAS_HINT_EXPAND, 0.0)
+        bt.size_hint_align = (-1.0, 0.0)
+        bt.size_hint_weight = (1.0, 0.0)
         bt.callback_clicked_add(files, pkg_info_en)
         btnbox.pack_end(bt)
         bt.show()
 
         bt = elm.Button(self.win)
         bt.text_set("OK")
-        bt.callback_clicked_add(iw_close, iw)
-        bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, 0.0)
+        bt.callback_clicked_add(closebtn, iw)
+        bt.size_hint_align_set(-1.0, -1.0)
+        bt.size_hint_weight_set(1.0, 0.0)
         pkgbox.pack_end(bt)
         bt.show()
 
-
 #----Checks
     def check_file(self, fs, win):
-        deb = self.file
-        mimetype = mimetypes.guess_type (deb, strict=1)[0]
-        if mimetype == "application/x-debian-package":
-            self.pkg_information(self)
-            return
-        elif self.file == HOME or self.file == "%s/" %HOME:
+        if self.file == HOME:
             nofile_error_popup(win)
             return
         else:
-            logging.info("Invalid file!")
-            file_error_popup(win)
+            self.pkg_information(self)
             return
 
     def check_file_install(self, bt, win):
-        deb = self.file
-        mimetype = mimetypes.guess_type (deb, strict=1)[0]
-        if mimetype == "application/x-debian-package":
+        if self.file == HOME:
+            nofile_error_popup(win)
+            return
+        else:
             logging.info("Package: %s" %self.file)
             install_deb = 'dpkg -i %s'%self.file
             n = elm.Notify(win)
             esudo.eSudo(install_deb, win, start_callback=start_cb, end_callback=main_cb, data=n)
-        elif self.file == HOME or self.file == "%s/" %HOME:
-            nofile_error_popup(win)
-            return
-        else:
-            logging.info("Invalid file!")
-            file_error_popup(win)
             return
