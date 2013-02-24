@@ -61,6 +61,8 @@ class buttons_main(object):
         fs.text_set("Select .deb file")
         fs.window_title_set("Select a .deb file:")
         fs.expandable_set(False)
+        fs.inwin_mode_set(True)
+        fs.is_save_set(True)
         fs.path_set(HOME)
         fs.callback_file_chosen_add(self.init_wait)
         fs.callback_activated_add(self.en_wait)
@@ -110,6 +112,8 @@ class buttons_main(object):
             separator_string = " "
             path = separator_string.join(clargs.deb)
             if os.path.exists(path):
+                self.fs.path_set("%s" %path)
+                self.fs.selected_set("%s" %path)
                 self.et = ecore.Timer(0.04, self.cli_add, path)
 
                 self.n = n = elm.Notify(self.win)
@@ -126,8 +130,6 @@ class buttons_main(object):
 
 #----Common
     def cli_add(self, path):
-        self.fs.path_set("%s" %path)
-        self.fs.selected_set("%s" %path)
         logging.info("Loading %s..." %path)
         path = self.fs.selected_get()
         deb = path
@@ -205,7 +207,7 @@ class buttons_main(object):
             checks.file_noexist_popup(self.win)
 
     def bt_wait(self, bt):
-        self.et = ecore.Timer(0, self.bt_init_check)
+        self.et = ecore.Timer(0.3, self.bt_init_check)
         self.n = n = elm.Notify(self.win)
         lb = elm.Label(self.win)
         lb.text = "<b>Loading Package Information...</b>"

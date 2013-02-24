@@ -3,7 +3,7 @@ import string
 import re
 import logging
 import gc
-import evas, esudo
+import evas, ecore, esudo
 import elementary as elm
 import debfile as debianfile
 import urllib2, commands
@@ -332,36 +332,41 @@ class Checks(object):
             debcompare = deb.compare_to_version_in_cache(use_installed=True)
             debcomparerepo = deb.compare_to_version_in_cache(use_installed=False)
             if debcompare == 1:
-                pkg_info_en.entry_set("<b>Outdated:</> This version is lower than the version currently installed.")
+                pkg_info_en.entry_set("<b>Installed Version<ps>Outdated:</b> This version is lower than the version currently installed.")
             elif debcompare == 2:
-                pkg_info_en.entry_set("<b>Same:</> The same version is already installed.")
+                pkg_info_en.entry_set("<b>Installed Version<ps>Same:</b> The same version is already installed.")
             elif debcompare == 3:
-                pkg_info_en.entry_set("<b>Newer:</> This version is higher than the version currently installed.")
+                pkg_info_en.entry_set("<b>Installed Version<ps>Newer:</b> This version is higher than the version currently installed.")
             elif debcompare == 0:
-                pkg_info_en.entry_set("<b>None:</> This application has not been installed.")
+                pkg_info_en.entry_set("<b>Installed Version<ps>None:</b> This application has not been installed.")
             else:
-                pkg_info_en.entry_set("<b>Not found:</> A version installed or in the repository cannot be located for comparison.")
+                pkg_info_en.entry_set("<b>Installed Version<ps>Not found:</b> A version installed or in the repository cannot be located for comparison.")
 
             if debcomparerepo == 1:
-                pkg_info_en.entry_append("<ps><ps><b>Outdated:</> This version is lower than the version available in the repository.")
+                pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>Outdated:</b> This version is lower than the version available in the repository.")
             elif debcomparerepo == 2:
-                pkg_info_en.entry_append("<ps><ps><b>Same:</> This version is the same as the version available in the repository.")
+                pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>Same:</b> This version is the same as the version available in the repository.")
             elif debcomparerepo == 3:
-                pkg_info_en.entry_append("<ps><ps><b>Newer:</> This version is higher than the version available in the repository.")
+                pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>Newer:</b> This version is higher than the version available in the repository.")
             elif debcomparerepo == 0:
-                pkg_info_en.entry_append("<ps><ps><b>None:</> This application cannot be located in the repository.")
+                pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>None:</b> This application cannot be located in the repository.")
             else:
-                pkg_info_en.entry_set("<b>Not found:</> A version installed or in the repository cannot be located for comparison.")
+                pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>Not found:</b> A version installed or in the repository cannot be located for comparison.")
 
         def checks(btn, pkg_info_en):
-            if deb.check_breaks_existing_packages() == False:
-                pkg_info_en.entry_set("<b>WARNING:</> Installing this package will <b>BREAK</> certain existing packages.")
-            elif deb.check_conflicts() == False:
-                pkg_info_en.entry_set("<b>WARNING:</> There are conflicting packages!")
-                conflicting = deb.conflicts
-                pkg_info_en.entry_append("<ps> %s" %conflicting)
-            else:
-                pkg_info_en.entry_set("<b>CLEAR:</> You are cleared to go. The selected file has passed <b>ALL</> checks.")
+            btn.disabled_set(True)
+            def real_checks(btn, pkg_info_en):
+                if deb.check_breaks_existing_packages() == False:
+                    pkg_info_en.entry_set("<b>WARNING:</> Installing this package will <b>BREAK</> certain existing packages.")
+                elif deb.check_conflicts() == False:
+                    pkg_info_en.entry_set("<b>WARNING:</> There are conflicting packages!")
+                    conflicting = deb.conflicts
+                    pkg_info_en.entry_append("<ps> %s" %conflicting)
+                else:
+                    pkg_info_en.entry_set("<b>CLEAR:</> You are cleared to go. The selected file has passed <b>ALL</> checks.")
+                btn.disabled_set(False)
+            et = ecore.Timer(0.3, real_checks, btn, pkg_info_en)
+            pkg_info_en.entry_set("<b>Please wait...</>")
 
         def depends(btn, pkg_info_en, bt):
             if self.depcheck:
@@ -376,11 +381,10 @@ class Checks(object):
             if missingdep == []:
                 pkg_info_en.entry_append("None<ps>")
             else:
+                pkg_info_en.entry_append("%s<ps>" %missdep)
                 if self.depbtn:
-                    pkg_info_en.entry_append("%s<ps>" %missdep)
                     return
                 else:
-                    pkg_info_en.entry_append("%s<ps>" %missdep)
                     bt = elm.Button(self.win)
                     bt.text_set("Attempt to Install Missing Dependencies")
                     bt.callback_clicked_add(dependency_grab, self.win)
@@ -396,10 +400,15 @@ class Checks(object):
                             %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_sec, pkg_pri, pkg_desc, pkg_size, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
 
         def files(btn, pkg_info_en):
-            filestosort = deb.filelist
-            separator_string = "<br>"
-            filesinlist = separator_string.join(filestosort)
-            pkg_info_en.entry_set("<b>Files:</><ps>%s<ps>" %filesinlist)
+            btn.disabled_set(True)
+            def real_files(btn, pkg_info_en):
+                filestosort = deb.filelist
+                separator_string = "<br>"
+                filesinlist = separator_string.join(filestosort)
+                pkg_info_en.entry_set("<b>Files:</><ps>%s<ps>" %filesinlist)
+                btn.disabled_set(False)
+            et = ecore.Timer(0.3, real_files, btn, pkg_info_en)
+            pkg_info_en.entry_set("<b>Loading file list...</>")
 
         def closebtn(btn, iw):
             self.depbtn = None
