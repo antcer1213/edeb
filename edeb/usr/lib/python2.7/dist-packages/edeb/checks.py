@@ -331,27 +331,29 @@ class Checks(object):
         def compare(btn, pkg_info_en):
             debcompare = deb.compare_to_version_in_cache(use_installed=True)
             debcomparerepo = deb.compare_to_version_in_cache(use_installed=False)
+            pkg_info_en.entry_set("<b>Installed Version<ps>")
             if debcompare == 1:
-                pkg_info_en.entry_set("<b>Installed Version<ps>Outdated:</b> This version is lower than the version currently installed.")
+                pkg_info_en.entry_append("Outdated:</b> This version is lower than the version currently installed.")
             elif debcompare == 2:
-                pkg_info_en.entry_set("<b>Installed Version<ps>Same:</b> The same version is already installed.")
+                pkg_info_en.entry_append("Same:</b> The same version is already installed.")
             elif debcompare == 3:
-                pkg_info_en.entry_set("<b>Installed Version<ps>Newer:</b> This version is higher than the version currently installed.")
+                pkg_info_en.entry_append("Newer:</b> This version is higher than the version currently installed.")
             elif debcompare == 0:
-                pkg_info_en.entry_set("<b>Installed Version<ps>None:</b> This application has not been installed.")
+                pkg_info_en.entry_append("None:</b> This application has not been installed.")
             else:
-                pkg_info_en.entry_set("<b>Installed Version<ps>Not found:</b> A version installed or in the repository cannot be located for comparison.")
+                pkg_info_en.entry_append("Not found:</b> A version installed or in the repository cannot be located for comparison.")
 
+            pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>")
             if debcomparerepo == 1:
-                pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>Outdated:</b> This version is lower than the version available in the repository.")
+                pkg_info_en.entry_append("Outdated:</b> This version is lower than the version available in the repository.")
             elif debcomparerepo == 2:
-                pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>Same:</b> This version is the same as the version available in the repository.")
+                pkg_info_en.entry_append("Same:</b> This version is the same as the version available in the repository.")
             elif debcomparerepo == 3:
-                pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>Newer:</b> This version is higher than the version available in the repository.")
+                pkg_info_en.entry_append("Newer:</b> This version is higher than the version available in the repository.")
             elif debcomparerepo == 0:
-                pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>None:</b> This application cannot be located in the repository.")
+                pkg_info_en.entry_append("None:</b> This application cannot be located in the repository.")
             else:
-                pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>Not found:</b> A version installed or in the repository cannot be located for comparison.")
+                pkg_info_en.entry_append("Not found:</b> A version installed or in the repository cannot be located for comparison.")
 
         def checks(btn, pkg_info_en):
             btn.disabled_set(True)
