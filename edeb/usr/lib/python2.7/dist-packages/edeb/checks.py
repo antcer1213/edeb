@@ -119,9 +119,12 @@ def dep_grab_cb(exit_code, win, *args, **kwargs):
         gc.collect()
     else:
         logging.info("Something went wrong while installing dependencies.")
-def main_cb(exit_code, win, *args, **kwargs):
+def main_cb(exit_code, win, bt1, bt2, en, *args, **kwargs):
     n = kwargs["data"]
     n.delete()
+    bt1.disabled_set(False)
+    bt2.disabled_set(False)
+    en.disabled_set(False)
     if exit_code == 0:
         logging.info("Installation Completed!")
         finished_popup(win)
@@ -422,7 +425,7 @@ class Checks(object):
         pkgbox.size_hint_weight_set(1.0, 1.0)
 
         pkgfr = elm.Frame(self.win)
-        pkgfr.text_set("Package Information:")
+        pkgfr.text_set("Package Information")
         pkgbox.pack_end(pkgfr)
 
         pkg_info_en = elm.Entry(self.win)
@@ -514,13 +517,18 @@ class Checks(object):
             self.pkg_information(self)
             return
 
-    def check_file_install(self, bt, win):
+    def check_file_install(self, bt1, win, bt2, en):
         if self.file == HOME:
             nofile_error_popup(win)
             return
         else:
+            bt1.disabled_set(True)
+            bt2.disabled_set(True)
+            en.disabled_set(True)
+            self.bt1 = bt1
+            self.bt2 = bt2
             logging.info("Package: %s" %self.file)
             install_deb = 'dpkg -i %s'%self.file
             n = elm.Notify(win)
-            esudo.eSudo(install_deb, win, start_callback=start_cb, end_callback=main_cb, data=n)
+            esudo.eSudo(install_deb, win, bt1, bt2, en, start_callback=start_cb, end_callback=main_cb, data=n)
             return

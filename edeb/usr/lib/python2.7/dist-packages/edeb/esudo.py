@@ -25,7 +25,7 @@ def pw_error_popup(bt, win):
 
 #----eSudo
 class eSudo(object):
-    def __init__( self, command=None, window=None, start_callback=None, end_callback=None, *args, **kwargs ):
+    def __init__( self, command=None, window=None, bt1=None, bt2= None, en=None, start_callback=None, end_callback=None, *args, **kwargs):
 
         self.mainWindow = self.win = win = window
         self.Window = False
@@ -38,6 +38,9 @@ class eSudo(object):
         self.kwargs = kwargs
 
         self.blocked = blocked = False
+        self.bt1 = bt1
+        self.bt2 = bt2
+        self.en = en
 
 #--------eSudo Window
         bz = elementary.Box(win)
@@ -71,7 +74,7 @@ class eSudo(object):
         bz1.pack_end(lb)
         lb.show()
 
-        enpw = elementary.Entry(win)
+        enpw = self.enpw = elementary.Entry(win)
         enpw.elm_event_callback_add(self.pw_entry_event)
         enpw.single_line = True
         enpw.password = True
@@ -101,13 +104,13 @@ class eSudo(object):
         bz2.pack_end(bt)
         bt.show()
 
-        bt = self.bt = elementary.Button(win)
-        bt.text = "OK"
-        bt.callback_clicked_add(self.password_check, enpw)
-        bt.size_hint_align = -1.0, -1.0
-        bt.size_hint_weight = 1.0, 0.0
-        bz2.pack_end(bt)
-        bt.show()
+        okbt = self.okbt = elementary.Button(win)
+        okbt.text = "OK"
+        okbt.callback_clicked_add(self.esudo_ok_wait, enpw)
+        okbt.size_hint_align = -1.0, -1.0
+        okbt.size_hint_weight = 1.0, 0.0
+        bz2.pack_end(okbt)
+        okbt.show()
 
         bz.pack_end(bz2)
         bz2.show()
@@ -118,21 +121,41 @@ class eSudo(object):
         iw.show()
         iw.activate()
 
-    def pw_entry_event(self, obj, entry, event_type, event, *args):
-        if event_type == 11:
+    def pw_entry_event(self, obj, enpw, event_type, event, *args):
+        if event_type == evas.EVAS_CALLBACK_KEY_UP:
             if event.keyname == "Return":
                 if self.blocked:
                     return
                 else:
                     self.blocked = True
-                    self.password_check(None, entry)
+                    self.okbt.disabled_set(True)
+                    self.bt.disabled_set(True)
+                    enpw.disabled_set(True)
+                    et0 = ecore.Timer(0.3, self.esudo_ok_wait, self.okbt, enpw)
             elif event.keyname == "Escape":
                 self.close()
-        return True
+            else:
+                return
+        else:
+            return
+
+#--------eSudo OK Wait
+    def esudo_ok_wait(self, bt, enpw):
+        if bt.disabled_get():
+            pass
+        else:
+            bt.disabled_set(True)
+            self.bt.disabled_set(True)
+            enpw.disabled_set(True)
+        et1 = ecore.Timer(0.3, self.password_check, bt, enpw)
+
+#--------Annoying Blocked Variable Reset...
+    def blk_reset(self):
+        self.blocked = False
+        self.enpw.disabled_set(False)
 
 #--------Password Checker
     def password_check(self, bt, enpw):
-        self.bt.disabled_set(True)
 
 #------------Sets Password
         def pam_conv(auth, query_list, userData):
@@ -162,12 +185,14 @@ class eSudo(object):
             auth.authenticate()
             auth.acct_mgmt()
         except PAM.error, resp:
+            bt.disabled_set(False)
             self.bt.disabled_set(False)
+            enpw.disabled_set(False)
             pw_error_popup(bt, self.mainWindow)
             enpw.entry = ""
             enpw.focus = True
             logging.info("Invalid password! Please try again.")
-            self.blocked = False
+            et2 = ecore.Timer(3.0, self.blk_reset)
             return
         except:
             logging.exception("Internal error! File bug report.")
@@ -178,11 +203,16 @@ class eSudo(object):
     def esudo_cancel(self, bt, enpw):
         logging.info("Cancelled before initiated.")
         enpw.entry = ""
+        self.enpw.focus = False
         self.close()
 
     def close(self):
         self.iw.delete()
         self.blocked = None
+        if self.bt1 != None:
+            self.bt1.disabled_set(False)
+            self.bt2.disabled_set(False)
+            self.en.disabled_set(False)
 
 #--------eSudo OK Button
     def esudo_ok(self, enpw):
@@ -203,7 +233,6 @@ class eSudo(object):
         if self.start_cb:
             try:
                 self.close()
-                self.blocked = True
                 self.start_cb(self.mainWindow, *self.args, **self.kwargs)
             except:
                 logging.exception("Exception while running start_cb")
@@ -221,9 +250,8 @@ class eSudo(object):
 
     def command_done(self, cmd, event, *args, **kwargs):
         logging.debug("Command done.")
-        self.blocked = None
         if self.end_cb:
             try:
-                self.end_cb(event.exit_code, self.mainWindow, *self.args, **self.kwargs)
+                self.end_cb(event.exit_code, self.mainWindow, self.bt1, self.bt2, self.en, *self.args, **self.kwargs)
             except:
                 logging.exception("Exception while running end_cb")

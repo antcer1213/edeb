@@ -82,7 +82,7 @@ class buttons_main(object):
         vbox.pack_end(btbox)
         btbox.show()
 
-        bt = elm.Button(win)
+        bt = self.bt1 = elm.Button(win)
         bt.text_set("Install")
         bt.callback_clicked_add(self.inst_check, win)
         bt.size_hint_align_set(-1.0, -1.0)
@@ -90,7 +90,7 @@ class buttons_main(object):
         btbox.pack_end(bt)
         bt.show()
 
-        bt = elm.Button(win)
+        bt = self.bt2 = elm.Button(win)
         bt.text_set("Package Info")
         bt.callback_clicked_add(self.bt_wait)
         bt.size_hint_align_set(-1.0, -1.0)
@@ -207,16 +207,21 @@ class buttons_main(object):
             checks.file_noexist_popup(self.win)
 
     def bt_wait(self, bt):
-        self.et = ecore.Timer(0.3, self.bt_init_check)
-        self.n = n = elm.Notify(self.win)
-        lb = elm.Label(self.win)
-        lb.text = "<b>Loading Package Information...</b>"
-        lb.size_hint_align = 0.0, 0.5
-        lb.show()
-        n.orient = 1
-        n.allow_events_set(False)
-        n.content = lb
-        n.show()
+        path = self.fs.selected_get()
+        if path == HOME:
+            checks.nofile_error_popup(self.win)
+            return
+        else:
+            self.et = ecore.Timer(0.3, self.bt_init_check, path)
+            self.n = n = elm.Notify(self.win)
+            lb = elm.Label(self.win)
+            lb.text = "<b>Loading Package Information...</b>"
+            lb.size_hint_align = 0.0, 0.5
+            lb.show()
+            n.orient = 1
+            n.allow_events_set(False)
+            n.content = lb
+            n.show()
 
     def init_check(self, path):
         deb = debianfile.DebPackage(path, cache=None)
@@ -237,10 +242,9 @@ class buttons_main(object):
     def inst_check(self, bt, win):
         path = self.fs.selected_get()
         chk = checks.Checks(path, self.win, end_callback=None)
-        chk.check_file_install(self.fs, win)
+        chk.check_file_install(bt, win, self.bt2, self.fs)
 
-    def bt_init_check(self):
-        path = self.fs.selected_get()
+    def bt_init_check(self, path):
         chk = checks.Checks(path, self.win, end_callback=None)
         chk.check_file(self.fs, self.win)
         self.n.delete()

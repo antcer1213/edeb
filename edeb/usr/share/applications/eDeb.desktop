@@ -1,7 +1,7 @@
 [Desktop Entry]
 Hidden=false
-Exec=edeb
-Icon=gnome-mime-application-x-deb
+Exec=/usr/share/icons/edeb.png
+Icon=edeb
 Type=Application
 Categories=System;
 MimeType=application/x-deb;application/x-debian-package;
