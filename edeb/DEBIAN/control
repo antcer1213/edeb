@@ -1,9 +1,9 @@
 Package: edeb
-Version: 1.5
+Version: 1.7
 Section: main
 Priority: optional
 Architecture: all
-Depends: python-elementary, python-evas, python-ecore, python-edbus, python-edje, python-emotion, python-ethumb, python-pam
+Depends: python-elementary, python-evas, python-ecore, python-pam
 Maintainer: Anthony Cervantes
 Description: eDeb (Debian Package Installer)
  A simple, but powerful GUI to install .deb files.

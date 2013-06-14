@@ -1,340 +1,315 @@
 import os
 import string
-import re
-import logging
-import gc
+import urllib2
 import evas, ecore, esudo
 import elementary as elm
 import debfile as debianfile
-import urllib2, commands
-logging.basicConfig(level=logging.DEBUG)
+
+"""          Checks/Information Functions
+
+Part of eDeb, a deb-package installer built on Python-EFL's.
+By: AntCer (bodhidocs@gmail.com)
+
+"""
+
 HOME = os.getenv("HOME")
-
-#----Common
-def popup_close(btn, popup):
-    popup.delete()
-
-def iw_close(bt, iw):
-    iw.delete()
-    gc.collect()
 
 #----Popups
 def nofile_error_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation."
     popup.timeout = 3.0
     popup.show()
 
 def file_noexist_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>File does not exist</><br><br>Please select an appropriate file candidate for installation."
     popup.timeout = 3.0
     popup.show()
 
 def file_error_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>Invalid File Format</><br><br>That is <em>not</> a .deb file!"
     popup.timeout = 3.0
     popup.show()
 
 def no_net_popup(win):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (1.0, 1.0)
     popup.text = "<b>Error</><br><br>No internet access.<br>Please try again when connected to internet."
     bt = elm.Button(win)
     bt.text = "OK"
-    bt.callback_clicked_add(popup_close, popup)
+    bt.callback_clicked_add(lambda o: popup.delete())
     popup.part_content_set("button1", bt)
     popup.show()
 
-def finished_dep_install_popup(win):
+def not_installable_popup(win, msg):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (1.0, 1.0)
-    popup.text = "<b>Successful!</b><br><br>Missing dependencies successfully installed."
+    popup.text = "<b>Non-Eligibility Error</b><br><br>%s" %msg
     bt = elm.Button(win)
-    bt.text = "OK"
-    bt.callback_clicked_add(popup_close, popup)
-    popup.part_content_set("button1", bt)
-    popup.show()
-
-def not_installable_popup(win):
-    popup = elm.Popup(win)
-    popup.size_hint_weight = (1.0, 1.0)
-    popup.text = "<b>Error</b><br><br>This file has failed initial check. It cannot be installed.<br><br>This is most often caused by a previously broken installation. Click <b>Fix</b> to attempt to repair broken packages, then try again.<br><br>If this occurs again, then the file may be of the wrong architecture."
-    bt = elm.Button(win)
-    bt.text = "Fix"
-    bt.callback_clicked_add(dependency_comp, popup, win)
-    popup.part_content_set("button1", bt)
+    if "Broken " in msg:
+        bt.text = "Fix"
+        bt.callback_clicked_add(lambda o: dependency_comp(popup, win))
+        popup.part_content_set("button1", bt)
     bt = elm.Button(win)
     bt.text = "Close"
-    bt.callback_clicked_add(popup_close, popup)
-    popup.part_content_set("button2", bt)
+    bt.callback_clicked_add(lambda o: popup.delete())
+    if "Broken " in msg:
+        popup.part_content_set("button2", bt)
+    else:
+        popup.part_content_set("button1", bt)
     popup.show()
 
-def dependency_popup(win):
+def dependency_popup(win, en):
     popup = elm.Popup(win)
-    popup.size_hint_weight = (1.0, 1.0)
-    popup.text = "<b>Urgent</b><br><br>Installation Semi-Finished. All dependencies were not met.<ps><ps>Click <b>Grab</> to attempt to grab the missing dependencies and complete the installation."
+    popup.text = "<b>Urgent</b><br><br>Attempt to install missing/unmet dependencies by clicking <b>Grab</b>."
     bt = elm.Button(win)
     bt.text = "Grab"
-    bt.callback_clicked_add(dependency_comp, popup, win)
-    popup.part_content_set("button1", bt)
-    popup.show()
-
-def finished_popup(win):
-    popup = elm.Popup(win)
-    popup.size_hint_weight = (1.0, 1.0)
-    popup.text = "<b>Installation Finished!</b><br><br>The installation was successful."
-    bt = elm.Button(win)
-    bt.text = "OK"
-    bt.callback_clicked_add(popup_close, popup)
+    bt.callback_clicked_add(lambda o: dependency_comp(popup, win, en))
     popup.part_content_set("button1", bt)
     popup.show()
 
 #----Dependency Completion
-def dependency_comp(bt, popup, win):
+def dependency_comp(popup, win, en):
     popup.delete()
     try:
         con = urllib2.urlopen("http://www.google.com/")
-    except:
-        logging.exception("No network activity detected")
-        logging.exception("Please try again with an established Internet Connection.")
+    #~ except urllib2.URLError, e:
+    except IOError:
+        print("No network activity detected")
+        print("Please try again with an established Internet Connection.")
         no_net_popup(win)
     else:
-        logging.info("Starting attempt to fulfill dependencies:")
-        dep_comp = "apt-get -f install -y"
-        n = elm.Notify(win)
-        esudo.eSudo(dep_comp, win, start_callback=start_cb, end_callback=dep_cb, data=n)
+        print("Starting attempt to fulfill dependencies:")
+        dep_comp = "apt-get -f install"
+        n = elm.InnerWindow(win)
+        info_en = elm.Entry(win)
+        info_en_bt = elm.Button(win)
+        esudo.eSudo(info=info_en, en=en, info_bt=info_en_bt, command=dep_comp, window=win, start_callback=start_cb, end_callback=dep_cb, data=n)
 
 #---End Callbacks
-def dep_grab_cb(exit_code, win, *args, **kwargs):
-    n = kwargs["data"]
-    n.delete()
+def dep_grab_cb(exit_code, win, bt1, bt2, en, *args, **kwargs):
+    n  = kwargs["data"]
+    info = kwargs["info"]
+    bt = kwargs["info_bt"]
+
     if exit_code == 0:
-        logging.info("Successfully Grabbed Dependencies.")
-        finished_dep_install_popup(win)
-        gc.collect()
+        print("Successfully Grabbed Dependencies.")
+        info.entry_append("<ps><ps><b>Dependencies were successfully met!</b>")
+        bt.disabled_set(False)
     else:
-        logging.info("Something went wrong while installing dependencies.")
+        print("Something went wrong while installing dependencies.")
+        info.entry_append("<ps><ps><b>Error: Dependency-grabbing was not successful.</b><ps><ps>Please view all <b>Errors</b> above to find out why.")
+        bt.text = "OK"
+        bt.disabled_set(False)
 def main_cb(exit_code, win, bt1, bt2, en, *args, **kwargs):
-    n = kwargs["data"]
-    n.delete()
-    bt1.disabled_set(False)
-    bt2.disabled_set(False)
-    en.disabled_set(False)
+    n  = kwargs["data"]
+    info = kwargs["info"]
+    bt = kwargs["info_bt"]
+
+    if bt1 != None:
+        bt1.disabled_set(False)
+        bt2.disabled_set(False)
+        info.disabled_set(False)
     if exit_code == 0:
-        logging.info("Installation Completed!")
-        finished_popup(win)
-        gc.collect()
+        print("Installation completed successfully!")
+        info.entry_append("<ps><ps><b>Installation completed successfully!</b>")
+        bt.disabled_set(False)
+        en.path_set(HOME)
     else:
-        logging.info("Something went wrong. Likely, dependencies that weren't met before attempting installation.")
-        dependency_popup(win)
-def dep_cb(exit_code, win, *args, **kwargs):
+        print("Something went wrong. Likely, dependencies that weren't met before attempting installation.")
+        info.entry_append("<ps><ps><b>Urgent</b>: Something went wrong with installation. Likely, unmet dependencies.")
+        bt.text = "Install Missing Dependencies"
+        bt.callback_clicked_add(lambda o: dependency_popup(win, en))
+        bt.disabled_set(False)
+def dep_cb(exit_code, win, bt1, bt2, en, *args, **kwargs):
     n = kwargs["data"]
-    n.delete()
+    info = kwargs["info"]
+    bt = kwargs["info_bt"]
+
     if exit_code == 0:
-        logging.info("Successfully Grabbed Dependencies & Completed Installation.")
-        finished_popup(win)
-        gc.collect()
+        print("Successfully Grabbed Dependencies & Completed Installation.")
+        info.entry_append("<ps><ps><b>Dependencies were met and installation completed successfully!</b>")
+        bt.disabled_set(False)
+        en.path_set(HOME)
     else:
-        logging.info("Something went wrong while attempting to complete installation.")
+        print("Something went wrong while attempting to complete installation.")
+        info.entry_append("<ps><ps><b>Error: Dependency-grabbing was not successful.</b><ps><ps>Please view all <b>Errors</b> above to find out why.")
+        bt.text = "OK"
+        bt.disabled_set(False)
 
 #---Start Callback
 def start_cb(win, *args, **kwargs):
     n = kwargs["data"]
+    en = kwargs["info"]
+    bt = kwargs["info_bt"]
 
     box = elm.Box(win)
     box.size_hint_weight = 1.0, 1.0
     box.size_hint_align = -1.0, -1.0
 
-    lb = elm.Label(win)
-    lb.text = "<b>Please wait...</b>"
-    lb.size_hint_align = 0.0, 0.5
-    box.pack_end(lb)
-    lb.show()
+    en.entry_set("<b>Starting installation...</b>")
+    en.size_hint_weight = 1.0, 1.0
+    en.size_hint_align = -1.0, -1.0
+    en.line_wrap_set(2)
+    en.input_panel_return_key_disabled = False
+    en.editable_set(False)
+    en.scrollable_set(True)
+    box.pack_end(en)
+    en.show()
+
+    bt.text = "Done"
+    bt.callback_clicked_add(lambda o: n.delete())
+    bt.disabled_set(True)
+    bt.size_hint_align = -1.0, -1.0
+    bt.size_hint_weight = 1.0, 0.0
+    box.pack_end(bt)
+    bt.show()
 
     sep = elm.Separator(win)
     sep.horizontal = True
     box.pack_end(sep)
     sep.show()
 
-    pb = elm.Progressbar(win)
-    pb.style = "wheel"
-    pb.pulse(True)
-    pb.size_hint_weight = 1.0, 1.0
-    pb.size_hint_align_set(-1.0, -1.0)
-    box.pack_end(pb)
-    pb.show()
+    #~ pb = elm.Progressbar(win)
+    #~ pb.style = "wheel"
+    #~ pb.pulse(True)
+    #~ pb.size_hint_weight = 1.0, 1.0
+    #~ pb.size_hint_align_set(-1.0, -1.0)
+    #~ box.pack_end(pb)
+    #~ pb.show()
 
     box.show()
 
-    n.orient = 1
-    n.allow_events_set(False)
+    #~ n.orient = 1
+    #~ n.size_hint_weight = 1.0, 1.0
+    #~ n.allow_events_set(False)
     n.content = box
     n.show()
-
+    n.activate()
 
 
 
 
 class Checks(object):
-    def __init__(self, command=False, window=False, end_callback=False ):
-        self.win = window
-        self.file = command
-        self.depbtn = depbtn = False
-        self.depcheck = depcheck = False
-        self.end_cb = end_callback if callable(end_callback) else None
+    def __init__(self, command=False, window=False):
+        self.win        = window
+        self.file       = command
+        self.depbtn     = False
+        self.depcheck   = False
 
 #----Package Info
-    def pkg_information(self, win):
-        deb = debianfile.DebPackage(self.file, cache=None)
+    def pkg_information(self, deb):
+        win             = self.win
+
+        try:
+            filesinlist
+        except NameError:
+            filesinlist = "<br>       ".join(deb.filelist)
+        else:
+            pass
+
 #----------------Desc
-        long_desc = ""
-        raw_desc = string.split(deb["Description"], "\n")
-        # append a newline to the summary in the first line
-        summary = raw_desc[0]
-        raw_desc[0] = ""
-        long_desc = "%s\n" % summary
-        for line in raw_desc:
-            tmp = string.strip(line)
-            long_desc += tmp + "\n"
-        # do some regular expression magic on the description
-        # Add a newline before each bullet
-        p = re.compile(r'^(\s|\t)*(\*|0|-)',re.MULTILINE)
-        long_desc = p.sub('\n*', long_desc)
-        p = re.compile(r'\n', re.MULTILINE)
-        long_desc = p.sub(" ", long_desc)
-        p = re.compile(r'\s\s+', re.MULTILINE)
-        summary = p.sub("<br>", long_desc)
-        long_desc = "<br><b>Description:</> %s<br>" % summary
-        pkg_desc = long_desc
+        try:
+            raw_desc = string.split(deb["Description"], "\n")
+            long_desc = "%s<br>" %raw_desc[0].replace("&", "&amp;").replace("<", "&lt;") ; del raw_desc[0]
+            for line in raw_desc:
+                tmp = string.strip(line).replace("&", "&amp;").replace("<", "&lt;")
+                if len(tmp) == 1:
+                    pass
+                else:
+                    long_desc += " " + tmp
+        except:
+            long_desc = "Not available"
+
+        pkg_desc = "<br><b>Description:</> %s" % long_desc
 #----------------Name
-        long_desc = ""
-        raw_desc = string.split(deb["Package"], "\n")
-        summary = raw_desc[0]
-        long_desc = "<b>Package:</> %s" % summary
-        pkg_name = long_desc
+        try:
+            pkg_name = "<b>Package:</> %s<ps>" % string.split(deb["Package"], "\n")[0]
+        except:
+            pkg_name = ""
 #----------------Auth
-        long_desc = ""
-        raw_desc = string.split(deb["Maintainer"], "\n")
-        summary = raw_desc[0]
-        long_desc = "<b>Maintainer:</> %s" % summary
-        pkg_auth = long_desc
+        try:
+            pkg_auth = "<b>Maintainer:</> %s<ps>" % string.split(deb["Maintainer"], "\n")[0]
+        except:
+            pkg_auth = ""
 #----------------Ver
-        long_desc = ""
-        raw_desc = string.split(deb["Version"], "\n")
-        summary = raw_desc[0]
-        long_desc = "<b>Version:</> %s" % summary
-        pkg_ver = long_desc
+        try:
+            pkg_ver = "<b>Version:</> %s<ps>" % string.split(deb["Version"], "\n")[0]
+        except:
+            pkg_ver = ""
 #----------------Arch
-        long_desc = ""
-        raw_desc = string.split(deb["Architecture"], "\n")
-        summary = raw_desc[0]
-        long_desc = "<b>Architecture:</> %s" % summary
-        pkg_arch = long_desc
+        pkg_arch    = "<b>Architecture:</> %s<ps>" % string.split(deb["Architecture"], "\n")[0]
 #----------------Sec
-        long_desc = ""
-        raw_desc = string.split(deb["Section"], "\n")
-        summary = raw_desc[0]
-        long_desc = "<b>Section:</> %s" % summary
-        pkg_sec = long_desc
+        try:
+            pkg_sec = "<b>Section:</> %s<ps>" % string.split(deb["Section"], "\n")[0]
+        except:
+            pkg_sec = ""
 #----------------Pri
-        long_desc = ""
-        raw_desc = string.split(deb["Priority"], "\n")
-        summary = raw_desc[0]
-        long_desc = "<b>Priority:</> %s" % summary
-        pkg_pri = long_desc
+        try:
+            pkg_pri = "<b>Priority:</> %s<ps>" % string.split(deb["Priority"], "\n")[0]
+        except:
+            pkg_pri = ""
 #----------------Size
         try:
-            deb["Installed-Size"]
-            long_desc = ""
-            raw_desc = string.split(deb["Installed-Size"] + " KB", "\n")
-            summary = raw_desc[0]
-            long_desc = "<b>Installed-Size:</> %s<ps>" % summary
-            pkg_size = long_desc
+            pkg_size = "<b>Installed-Size:</> %s<ps>" % string.split(deb["Installed-Size"] + " KB", "\n")[0]
         except:
             pkg_size = ""
 #----------------Recc
         try:
-            deb["Recommends"]
-            long_desc = ""
-            raw_desc = string.split(deb["Recommends"], "\n")
-            summary = raw_desc[0]
-            long_desc = "<b>Recommends:</> %s<ps>" % summary
-            pkg_recc = long_desc
+            pkg_recc = "<b>Recommends:</> %s<ps>" % string.split(deb["Recommends"], "\n")[0]
         except:
             pkg_recc = ""
 #----------------Conf
         try:
-            deb["Conflicts"]
-            long_desc = ""
-            raw_desc = string.split(deb["Conflicts"], "\n")
-            summary = raw_desc[0]
-            long_desc = "<b>Conflicts:</> %s<ps>" % summary
-            pkg_conf = long_desc
+            pkg_conf = "<b>Conflicts:</> %s<ps>" % string.split(deb["Conflicts"], "\n")[0].replace("<", "&lt;")
         except:
             pkg_conf = ""
 #----------------Repl
         try:
-            deb["Replaces"]
-            long_desc = ""
-            raw_desc = string.split(deb["Replaces"], "\n")
-            summary = raw_desc[0]
-            long_desc = "<b>Replaces:</> %s<ps>" % summary
-            pkg_repl = long_desc
+            pkg_repl = "<b>Replaces:</> %s<ps>" % string.split(deb["Replaces"], "\n")[0]
         except:
             pkg_repl = ""
 #----------------Prov
         try:
-            deb["Provides"]
-            long_desc = ""
-            raw_desc = string.split(deb["Provides"], "\n")
-            summary = raw_desc[0]
-            long_desc = "<b>Provides:</> %s<ps>" % summary
-            pkg_prov = long_desc
+            pkg_prov = "<b>Provides:</> %s<ps>" % string.split(deb["Provides"], "\n")[0]
         except:
             pkg_prov = ""
 #----------------HP
         try:
-            deb["Homepage"]
-            long_desc = ""
-            raw_desc = string.split(deb["Homepage"], "\n")
-            summary = raw_desc[0]
-            long_desc = "<b>Homepage:</> %s" % summary
-            pkg_hp = long_desc
+            pkg_hp = "<b>Homepage:</> %s" % string.split(deb["Homepage"], "\n")[0]
         except:
             pkg_hp = ""
 #----------------Dep
-        pkg_dep  = commands.getoutput("dpkg -f %s | sed 's/<</less than/' | awk '/Depends:/' | sed 's/Depends:/ /' | sed 's/Pre-/ /'" %self.file)
+        #~ pkg_dep  = getoutput("dpkg -f %s | sed 's/<</less than/' | awk '/Depends:/' | sed 's/Depends:/ /' | sed 's/Pre-/ /'" %self.file)
 #----------------FB
         if pkg_hp == "" and pkg_size == "" and pkg_recc == "" and pkg_prov == "" and pkg_conf == "" and pkg_repl == "":
             pkg_size = "None<ps>"
 
 
-        def dependency_grab(bt, win):
+        def dependency_grab():
             try:
                 con = urllib2.urlopen("http://www.google.com/")
-            except:
-                logging.exception("No network activity detected")
-                logging.exception("Please try again with an established Internet Connection.")
+            #~ except urllib2.URLError, e:
+            except IOError:
+                print("No network activity detected")
+                print("Please try again with an established Internet Connection.")
                 iw.delete()
-                no_net_popup(win)
+                no_net_popup(self.win)
             else:
                 missingdep = deb.missing_deps
-                separator_string = " "
-                missdep = separator_string.join(missingdep)
-                logging.info("Starting Dependency Grab:")
-                dep_grab = "apt-get --no-install-recommends install -y %s" %(missdep)
-                n = elm.Notify(win)
-                esudo.eSudo(dep_grab, win, start_callback=start_cb, end_callback=dep_grab_cb, data=n)
+                missdep = " ".join(missingdep)
+                print("Starting Dependency Grab:")
+                dep_grab = "apt-get install %s" %(missdep)
+                n = elm.InnerWindow(win)
+                info_en = elm.Entry(win)
+                info_en_bt = elm.Button(win)
+                esudo.eSudo(info=info_en, info_bt=info_en_bt, command=dep_grab, window=self.win, start_callback=start_cb, end_callback=dep_grab_cb, data=n)
 
-        def compare(btn, pkg_info_en):
+        def compare(btn):
             debcompare = deb.compare_to_version_in_cache(use_installed=True)
             debcomparerepo = deb.compare_to_version_in_cache(use_installed=False)
-            pkg_info_en.entry_set("<b>Installed Version<ps>")
+
+            pkg_info_en.entry_set("<b>VS. Installed Version<ps>")
             if debcompare == 1:
                 pkg_info_en.entry_append("Outdated:</b> This version is lower than the version currently installed.")
             elif debcompare == 2:
@@ -346,7 +321,7 @@ class Checks(object):
             else:
                 pkg_info_en.entry_append("Not found:</b> A version installed or in the repository cannot be located for comparison.")
 
-            pkg_info_en.entry_append("<ps><ps><b>Repository Version<ps>")
+            pkg_info_en.entry_append("<ps><ps><b>VS. Repository Version<ps>")
             if debcomparerepo == 1:
                 pkg_info_en.entry_append("Outdated:</b> This version is lower than the version available in the repository.")
             elif debcomparerepo == 2:
@@ -358,75 +333,100 @@ class Checks(object):
             else:
                 pkg_info_en.entry_append("Not found:</b> A version installed or in the repository cannot be located for comparison.")
 
-        def checks(btn, pkg_info_en):
-            btn.disabled_set(True)
+        def checks(btn):
             def real_checks(btn, pkg_info_en):
-                if deb.check_breaks_existing_packages() == False:
-                    pkg_info_en.entry_set("<b>WARNING:</> Installing this package will <b>BREAK</> certain existing packages.")
-                elif deb.check_conflicts() == False:
-                    pkg_info_en.entry_set("<b>WARNING:</> There are conflicting packages!")
-                    conflicting = deb.conflicts
-                    pkg_info_en.entry_append("<ps> %s" %conflicting)
-                else:
-                    pkg_info_en.entry_set("<b>CLEAR:</> You are cleared to go. The selected file has passed <b>ALL</> checks.")
-                btn.disabled_set(False)
-            et = ecore.Timer(0.3, real_checks, btn, pkg_info_en)
-            pkg_info_en.entry_set("<b>Please wait...</>")
+                try:
+                    breaks   = deb.check_breaks_existing_packages()
+                    if breaks != True:
+                        pkg_info_en.entry_set("<b>WARNING:</> Installing this package will break certain existing packages.<ps><ps><ps>%s"%breaks)
+                    elif deb.check_conflicts() != True:
+                        pkg_info_en.entry_set("<b>WARNING:</> There are conflicting packages.")
+                        pkg_info_en.entry_append("<ps> %s" %deb.conflicts)
+                    else:
+                        pkg_info_en.entry_set("<b>CLEAR:</> You are cleared to go. The selected file has passed <b>ALL</> checks.")
+                    btn.disabled_set(False)
+                except:
+                    print("eDeb Critical Error: Virtual group issue.\nExiting...")
+                    elm.exit()
+                    quit()
 
-        def depends(btn, pkg_info_en, bt):
+            btn.disabled_set(True)
+            pkg_info_en.entry_set("<b>Please wait...</>")
+            et = ecore.Timer(0.1, real_checks, btn, pkg_info_en)
+
+        def depends(btn):
             if self.depcheck:
                 pass
             else:
                 self.depcheck = True
                 deb.depends_check()
-            missingdep = deb.missing_deps
-            separator_string = " , "
-            missdep = separator_string.join(missingdep)
+
+            pkg_dep = []
+            for x in deb.depends:
+                pkg_dep.append(x[0][0])
+            pkg_dep     = ", ".join(pkg_dep)
+            if pkg_dep == "":
+                pkg_dep = "None"
+
+            missdep     = ", ".join(deb.missing_deps)
             pkg_info_en.entry_set("<b>Dependencies:</> %s<ps><ps><b>Missing Dependencies:</> " %pkg_dep)
-            if missingdep == []:
+            #~ pkg_info_en.entry_set("<b>Dependencies:</> %s<ps><ps><b>Missing Dependencies:</> " %pkg_dep)
+            if deb.missing_deps == []:
                 pkg_info_en.entry_append("None<ps>")
             else:
                 pkg_info_en.entry_append("%s<ps>" %missdep)
                 if self.depbtn:
                     return
                 else:
-                    bt = elm.Button(self.win)
-                    bt.text_set("Attempt to Install Missing Dependencies")
-                    bt.callback_clicked_add(dependency_grab, self.win)
-                    bt.size_hint_align_set(-1.0, -1.0)
-                    bt.size_hint_weight_set(1.0, 0.0)
-                    pkgbox.pack_end(bt)
-                    bt.show()
+                    bt2.text = "Attempt to Install Missing Dependencies"
+                    bt2.show()
                     self.depbtn = True
                     return
 
-        def info(btn, pkg_info_en):
-            pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps><b><i>Extra Information:</i></b><ps>%s%s%s%s%s%s" \
+        def info(btn):
+            pkg_info_en.entry_set("%s%s%s%s%s%s%s<ps><ps><b><i>Extra Information:</i></b><ps>%s%s%s%s%s%s" \
                             %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_sec, pkg_pri, pkg_desc, pkg_size, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
 
-        def files(btn, pkg_info_en):
-            btn.disabled_set(True)
+        def files(btn):
             def real_files(btn, pkg_info_en):
-                filestosort = deb.filelist
-                separator_string = "<br>"
-                filesinlist = separator_string.join(filestosort)
-                pkg_info_en.entry_set("<b>Files:</><ps>%s<ps>" %filesinlist)
+                pkg_info_en.entry_set("<b>Files:</><ps>       %s<ps>" %filesinlist)
                 btn.disabled_set(False)
+
+            btn.disabled_set(True)
             et = ecore.Timer(0.3, real_files, btn, pkg_info_en)
             pkg_info_en.entry_set("<b>Loading file list...</>")
 
-        def closebtn(btn, iw):
+        def closebtn(deb):
             self.depbtn = None
             self.depcheck = None
-            iw_close(btn, iw)
+            pkgbox.delete()
+            iw.delete()
+            del deb
 
 
         pkgbox = elm.Box(self.win)
         pkgbox.size_hint_weight_set(1.0, 1.0)
+        pkgbox.show()
 
         pkgfr = elm.Frame(self.win)
         pkgfr.text_set("Package Information")
+        pkgfr.size_hint_weight_set(0.0, 0.0)
+        pkgfr.size_hint_align_set(0.5, -1.0)
         pkgbox.pack_end(pkgfr)
+        pkgfr.show()
+
+        tb = elm.Toolbar(self.win)
+        tb.size_hint_weight_set(1.0, 0.0)
+        tb.size_hint_align_set(-1.0, -1.0)
+        tb.item_append("", "Info",    lambda x,y: info(y))
+        tb.item_append("", "Compare", lambda x,y: compare(y))
+        tb.item_append("", "Checks",  lambda x,y: checks(y))
+        tb.item_append("", "Depends", lambda x,y: depends(y))
+        tb.item_append("", "Files",   lambda x,y: files(y))
+        tb.homogeneous_set(True)
+        tb.select_mode_set(2)
+        pkgbox.pack_end(tb)
+        tb.show()
 
         pkg_info_en = elm.Entry(self.win)
         pkg_info_en.line_wrap_set(2)
@@ -435,100 +435,49 @@ class Checks(object):
         pkg_info_en.size_hint_weight_set(1.0, 1.0)
         pkg_info_en.editable_set(False)
         pkg_info_en.scrollable_set(True)
-        pkg_info_en.entry_set("%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps>%s<ps><ps><b><i>Extra Information:</i></b><ps>%s%s%s%s%s%s" \
+        pkg_info_en.entry_set("%s%s%s%s%s%s%s<ps><ps><b><i>Extra Information:</i></b><ps>%s%s%s%s%s%s" \
                             %(pkg_name, pkg_auth, pkg_ver, pkg_arch, pkg_sec, pkg_pri, pkg_desc, pkg_size, pkg_recc, pkg_conf, pkg_repl, pkg_prov, pkg_hp))
-
         pkgbox.pack_end(pkg_info_en)
         pkg_info_en.show()
-
-        pkgbox.show()
-        pkgfr.show()
 
         iw = elm.InnerWindow(self.win)
         iw.content_set(pkgbox)
         iw.show()
         iw.activate()
 
-        btnbox = elm.Box(self.win)
-        btnbox.horizontal = True
-        btnbox.size_hint_weight = (1.0, 0.0)
-        pkgbox.pack_end(btnbox)
-        btnbox.show()
+        bt2 = elm.Button(self.win)
+        bt2.size_hint_weight_set(1.0, 0.0)
+        bt2.size_hint_align_set(-1.0, -1.0)
+        bt2.callback_clicked_add(lambda o: dependency_grab())
+        pkgbox.pack_end(bt2)
 
         bt = elm.Button(self.win)
-        bt.text = "Info"
-        bt.tooltip_text_set("View general information")
-        bt.size_hint_align = (-1.0, 0.0)
-        bt.size_hint_weight = (1.0, 0.0)
-        bt.callback_clicked_add(info, pkg_info_en)
-        btnbox.pack_end(bt)
-        bt.show()
-
-        bt = elm.Button(self.win)
-        bt.text = "Compare"
-        bt.tooltip_text_set("Compare version with the repo/installed versions")
-        bt.size_hint_align = (-1.0, 0.0)
-        bt.size_hint_weight = (1.0, 0.0)
-        bt.callback_clicked_add(compare, pkg_info_en)
-        btnbox.pack_end(bt)
-        bt.show()
-
-        bt = elm.Button(self.win)
-        bt.text = "Checks"
-        bt.tooltip_text_set("Check for conflicts/breaks if installed")
-        bt.size_hint_align = (-1.0, 0.0)
-        bt.size_hint_weight = (1.0, 0.0)
-        bt.callback_clicked_add(checks, pkg_info_en)
-        btnbox.pack_end(bt)
-        bt.show()
-
-        bt = elm.Button(self.win)
-        bt.text = "Depends"
-        bt.tooltip_text_set("Display dependencies and missing dependencies")
-        bt.size_hint_align = (-1.0, 0.0)
-        bt.size_hint_weight = (1.0, 0.0)
-        bt.callback_clicked_add(depends, pkg_info_en, bt)
-        btnbox.pack_end(bt)
-        bt.show()
-
-        bt = elm.Button(self.win)
-        bt.text = "Files"
-        bt.tooltip_text_set("View the file-listing")
-        bt.size_hint_align = (-1.0, 0.0)
-        bt.size_hint_weight = (1.0, 0.0)
-        bt.callback_clicked_add(files, pkg_info_en)
-        btnbox.pack_end(bt)
-        bt.show()
-
-        bt = elm.Button(self.win)
-        bt.text_set("OK")
-        bt.callback_clicked_add(closebtn, iw)
-        bt.size_hint_align_set(-1.0, -1.0)
+        bt.text = "OK"
         bt.size_hint_weight_set(1.0, 0.0)
+        bt.size_hint_align_set(-1.0, -1.0)
+        bt.callback_clicked_add(lambda o: closebtn(deb))
         pkgbox.pack_end(bt)
         bt.show()
 
 #----Checks
-    def check_file(self, fs, win):
+    def check_file(self, fs, win, deb):
         if self.file == HOME:
             nofile_error_popup(win)
-            return
         else:
-            self.pkg_information(self)
-            return
+            self.pkg_information(deb)
 
-    def check_file_install(self, bt1, win, bt2, en):
+    def check_file_install(self, bt1, bt2, win, en):
         if self.file == HOME:
             nofile_error_popup(win)
-            return
         else:
             bt1.disabled_set(True)
             bt2.disabled_set(True)
             en.disabled_set(True)
             self.bt1 = bt1
             self.bt2 = bt2
-            logging.info("Package: %s" %self.file)
+            print("\nPackage: %s" %self.file)
             install_deb = 'dpkg -i %s'%self.file
-            n = elm.Notify(win)
-            esudo.eSudo(install_deb, win, bt1, bt2, en, start_callback=start_cb, end_callback=main_cb, data=n)
-            return
+            n = elm.InnerWindow(win)
+            info_en = elm.Entry(win)
+            info_en_bt = elm.Button(win)
+            esudo.eSudo(info=info_en, info_bt=info_en_bt, command=install_deb, window=win, bt1=bt1, bt2=bt2, en=en, start_callback=start_cb, end_callback=main_cb, data=n)

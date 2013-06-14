@@ -6,17 +6,20 @@ Something actually useful done by Kai Huuhko <kai.huuhko@gmail.com>
 
 import os
 import getpass
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 import PAM
+
 import ecore
 import evas
-import elementary as elm
+import elementary
 
 #----Popups
 def pw_error_popup(bt, win):
-    popup = elm.Popup(win)
+    popup = elementary.Popup(win)
     popup.size_hint_weight = 1.0, 1.0
     popup.text = "<b>Error</><br><br>Incorrect Password!<br>Please try again."
-    print("eSudo Error: Incorrect Password. Please try again.")
     popup.timeout = 3.0
     popup.show()
 
@@ -33,7 +36,6 @@ class eSudo(object):
 
         self.args = args
         self.kwargs = kwargs
-        self.inst_info = kwargs['info']
 
         self.blocked = blocked = False
         self.bt1 = bt1
@@ -41,14 +43,14 @@ class eSudo(object):
         self.en = en
 
 #--------eSudo Window
-        bz = elm.Box(win)
+        bz = elementary.Box(win)
         bz.size_hint_weight = 1.0, 1.0
 
-        fr = elm.Frame(win)
+        fr = elementary.Frame(win)
         bz.pack_end(fr)
 
         fr.text_set("Command:")
-        self.cmdline = cmdline = elm.Label(win)
+        self.cmdline = cmdline = elementary.Label(win)
         cmdline.line_wrap_set(2)
         cmdline.wrap_width_set(280)
         cmdline.text = "<i>%s</i>"%self.cmd
@@ -57,22 +59,22 @@ class eSudo(object):
         cmdline.show()
         fr.content = cmdline
 
-        sep = elm.Separator(win)
+        sep = elementary.Separator(win)
         sep.horizontal = True
         bz.pack_end(sep)
         sep.show()
 
-        bz1 = elm.Box(win)
+        bz1 = elementary.Box(win)
         bz.pack_end(bz1)
         bz1.show()
 
-        lb = elm.Label(win)
+        lb = elementary.Label(win)
         lb.text = "<b>Password:</b>"
         lb.size_hint_align = 0.0, 0.5
         bz1.pack_end(lb)
         lb.show()
 
-        enpw = self.enpw = elm.Entry(win)
+        enpw = self.enpw = elementary.Entry(win)
         enpw.elm_event_callback_add(self.pw_entry_event)
         enpw.single_line = True
         enpw.password = True
@@ -80,9 +82,8 @@ class eSudo(object):
         enpw.size_hint_align = 0.5, 0.5
         bz1.pack_end(enpw)
         enpw.show()
-        enpw.focus = True
 
-        sep = elm.Separator(win)
+        sep = elementary.Separator(win)
         sep.horizontal = True
         bz.pack_end(sep)
         sep.show()
@@ -90,12 +91,12 @@ class eSudo(object):
         bz.show()
         fr.show()
 
-        bz2 = elm.Box(win)
+        bz2 = elementary.Box(win)
         bz2.horizontal = True
         bz2.size_hint_weight = 1.0, 0.0
         bz2.size_hint_align = -1.0, -1.0
 
-        bt = self.bt = elm.Button(win)
+        bt = self.bt = elementary.Button(win)
         bt.text = "Cancel"
         bt.callback_clicked_add(self.esudo_cancel, enpw)
         bt.size_hint_align = -1.0, -1.0
@@ -103,7 +104,7 @@ class eSudo(object):
         bz2.pack_end(bt)
         bt.show()
 
-        okbt = self.okbt = elm.Button(win)
+        okbt = self.okbt = elementary.Button(win)
         okbt.text = "OK"
         okbt.callback_clicked_add(self.esudo_ok_wait, enpw)
         okbt.size_hint_align = -1.0, -1.0
@@ -114,7 +115,8 @@ class eSudo(object):
         bz.pack_end(bz2)
         bz2.show()
 
-        self.iw = iw = elm.InnerWindow(win)
+        enpw.focus = True
+        self.iw = iw = elementary.InnerWindow(win)
         iw.content = bz
         iw.show()
         iw.activate()
@@ -189,17 +191,17 @@ class eSudo(object):
             pw_error_popup(bt, self.mainWindow)
             enpw.entry = ""
             enpw.focus = True
-            print("Invalid password! Please try again.")
+            logging.info("Invalid password! Please try again.")
             et2 = ecore.Timer(3.0, self.blk_reset)
             return
         except:
-            print("Internal error! File bug report.")
+            logging.exception("Internal error! File bug report.")
         else:
             self.esudo_ok(enpw)
 
 #--------eSudo Cancel Button
     def esudo_cancel(self, bt, enpw):
-        print("Cancelled before initiated.\n")
+        logging.info("Cancelled before initiated.")
         enpw.entry = ""
         self.enpw.focus = False
         self.close()
@@ -215,12 +217,7 @@ class eSudo(object):
 #--------eSudo OK Button
     def esudo_ok(self, enpw):
         password = enpw.entry_get()
-        print("Starting %s" % self.cmd)
-        if "apt-get" in self.cmd:
-            if "-f" in self.cmd:
-                self.cmd = self.cmd + " -y"
-            else:
-                self.cmd = self.cmd + " --no-install-recommends -y"
+        logging.info("Starting %s" % self.cmd)
         self.run_command("sudo -S %s" % (self.cmd), password)
 
     def run_command(self, command, password):
@@ -231,31 +228,30 @@ class eSudo(object):
         cmd.on_del_event_add(self.command_done)
 
     def command_started(self, cmd, event, *args, **kwargs):
-        print("Command started.")
+        logging.debug("Command started:")
+        logging.debug(cmd)
         if self.start_cb:
             try:
                 self.close()
                 self.start_cb(self.mainWindow, *self.args, **self.kwargs)
             except:
-                print("Exception while running start_cb")
+                logging.exception("Exception while running start_cb")
 
     def received_data(self, cmd, event, *args, **kwargs):
-        if not "\n" == event.data:
-            print(event.data[:-1])
-            self.inst_info.entry_append("<ps>         %s"%event.data)
+        logging.debug("Received data")
+        logging.debug(event.data)
 
     def received_error(self, cmd, event, *args, **kwargs):
-        if not "sudo" in event.data:
-            print("ERROR: %s" %event.data[:-1])
-            self.inst_info.entry_append("<ps>         <b>Error</b>: %s"%event.data)
-        else:
-            password = args[0]
-            cmd.send(str(password)+"\n")
+        logging.debug("Received error")
+        logging.debug(event.data)
+
+        password = args[0]
+        cmd.send(str(password)+"\n")
 
     def command_done(self, cmd, event, *args, **kwargs):
-        print("Command done.")
+        logging.debug("Command done.")
         if self.end_cb:
             try:
                 self.end_cb(event.exit_code, self.mainWindow, self.bt1, self.bt2, self.en, *self.args, **self.kwargs)
             except:
-                print("Exception while running end_cb")
+                logging.exception("Exception while running end_cb")

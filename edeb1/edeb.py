@@ -1,60 +1,61 @@
 #!/usr/bin/env python
 # encoding: utf-8
 import os
-import sys
 import ecore
 import elementary as elm
 import evas
 import checks
+import logging
 import mimetypes
 import debfile as debianfile
+logging.basicConfig(level=logging.DEBUG)
 
-
-"""                 eDeb
+"""eDeb
 
 A deb-package installer built on Python-EFL's.
 By: AntCer (bodhidocs@gmail.com)
 
+Uses a slightly modified eSudo, initially made
+by Anthony Cervantes, now maintained by Jeff Hoogland,
+and improved upon further by Kai Huuko.
+
 Started: January 17, 2013
 """
+
+import sys
+import argparse
+parser = argparse.ArgumentParser(description='A deb-package installer built on Python-EFLs.')
+parser.add_argument("deb", metavar="file", type=str, nargs="*",
+                    help="Debian package to initially load.")
+clargs = parser.parse_args(sys.argv[1:])
 HOME = os.getenv("HOME")
 
-try:
-    clargs = sys.argv[1:]
-    if "-h" in " ".join(clargs) or "--help" in " ".join(clargs):
-        print("usage: edeb [-h] [file]\n")
-        print("An Elementary GUI debian package installer built on Python-EFLs\n")
-        print("arguments:")
-        print("\tfile\t\tDebian package to initially load.\n")
-        print("optional arguments:")
-        print("\t-h, --help\tShow this help message and exit.")
-        quit()
-except:
-    clargs = False
 
 
 
-
-
-class eDeb(object):
-    def __init__(self, debclarg=False):
-        self.deb = False
-        clargs = debclarg
+class buttons_main(object):
+    def __init__(self, command=False):
 
 #----Main Window
         win = self.win = elm.StandardWindow("edeb", "eDeb")
         win.callback_delete_request_add(lambda o: elm.exit())
 
         vbox = elm.Box(win)
+        vbox.padding_set(5, 25)
         vbox.size_hint_align_set(-1.0, -1.0)
         vbox.size_hint_weight_set(1.0, 1.0)
         vbox.show()
 
-        fil = elm.Box(win)
-        fil.size_hint_align_set(-1.0, -1.0)
-        fil.size_hint_weight_set(1.0, 1.0)
-        vbox.pack_end(fil)
-        fil.show()
+        sep = elm.Separator(win)
+        sep.horizontal_set(True)
+        vbox.pack_end(sep)
+        sep.show()
+
+        fsbox = elm.Box(win)
+        fsbox.size_hint_align_set(-1.0, -1.0)
+        fsbox.size_hint_weight_set(1.0, 1.0)
+        vbox.pack_end(fsbox)
+        fsbox.show()
 
         fs = self.fs = elm.FileselectorEntry(win)
         fs.text_set("Select .deb file")
@@ -66,8 +67,8 @@ class eDeb(object):
         fs.callback_file_chosen_add(self.init_wait)
         fs.callback_activated_add(self.en_wait)
         fs.size_hint_align_set(-1.0, -1.0)
-        fs.size_hint_weight_set(1.0, 0.0)
-        fil.pack_end(fs)
+        fs.size_hint_weight_set(1.0, 1.0)
+        fsbox.pack_end(fs)
         fs.show()
 
         fil = elm.Box(win)
@@ -76,37 +77,47 @@ class eDeb(object):
         vbox.pack_end(fil)
         fil.show()
 
-        bt = elm.Button(win)
-        bt0 = elm.Button(win)
+        btbox = elm.Box(win)
+        btbox.size_hint_align_set(-1.0, -1.0)
+        btbox.size_hint_weight_set(1.0, 0.0)
+        vbox.pack_end(btbox)
+        btbox.show()
 
-        bt.text = "Install"
-        bt.size_hint_weight_set(1.0, 0.0)
-        bt.size_hint_align_set(-1.0, -1.0)
-        bt.callback_clicked_add(self.inst_check, bt0)
-        fil.pack_end(bt)
-        bt.show()
+        tb = elm.Toolbar(self.win)
+        tb.size_hint_weight_set(1.0, 0.0)
+        tb.size_hint_align_set(-1.0, -1.0)
+        self.bt1 = tb.item_append("", "Install", self.inst_check, win)
+        tb.select_mode_set(2)
+        btbox.pack_end(tb)
+        tb.show()
 
-        bt0.text = "Package Info"
-        bt0.size_hint_weight_set(1.0, 0.0)
-        bt0.size_hint_align_set(-1.0, -1.0)
-        bt0.callback_clicked_add(self.bt_wait)
-        fil.pack_end(bt0)
-        bt0.show()
+        tb = elm.Toolbar(self.win)
+        tb.size_hint_weight_set(1.0, 0.0)
+        tb.size_hint_align_set(-1.0, -1.0)
+        self.bt2 = tb.item_append("", "Package Info", self.bt_wait)
+        tb.select_mode_set(2)
+        btbox.pack_end(tb)
+        tb.show()
+
+        sep = elm.Separator(win)
+        sep.horizontal_set(True)
+        vbox.pack_end(sep)
+        sep.show()
 
         win.resize_object_add(vbox)
-        #~ win.resize(425, 285)
-        win.resize(460, 285)
+        win.resize(425, 285)
         win.show()
 
 #-------Add deb from CLI
-        if clargs:
-            path = clargs[0]
+        if clargs.deb:
+            separator_string = " "
+            path = separator_string.join(clargs.deb)
             if os.path.exists(path):
                 self.fs.path_set("%s" %path)
                 self.fs.selected_set("%s" %path)
-                et = ecore.Timer(0.3, self.cli_add, path)
+                self.et = ecore.Timer(0.11, self.cli_add, path)
 
-                self.n = n = elm.Notify(win)
+                self.n = n = elm.Notify(self.win)
                 lb = elm.Label(self.win)
                 lb.text = "<b>Loading Package Information...</b>"
                 lb.size_hint_align = 0.0, 0.5
@@ -116,40 +127,43 @@ class eDeb(object):
                 n.content = lb
                 n.show()
             else:
-                print("eDeb Error: Path, %s, does not exist." %path)
                 checks.file_noexist_popup(self.win)
 
 #----Common
     def cli_add(self, path):
-        print("Loading %s..." %path)
+        logging.info("Loading %s..." %path)
         path = self.fs.selected_get()
         deb = path
         mimetype = mimetypes.guess_type (deb, strict=1)[0]
-        print("Starting initial check...")
+        logging.info("Starting initial check...")
         if mimetype == "application/x-debian-package":
-            try:
-                self.deb = debianfile.DebPackage(path, None)
-            except:
-                return False
-            chk_fail = self.deb.check()
-            if chk_fail != True:
-                print("Initial check failed.")
+            deb = debianfile.DebPackage(path, cache=None)
+            if deb.check() ==  False:
+                logging.info("Initial check failed.")
                 self.fs.selected_set(HOME)
                 self.fs.path_set(HOME)
-                checks.not_installable_popup(self.win, chk_fail)
+                self.n.delete()
+                checks.not_installable_popup(self.win)
+                return
             else:
-                print("Initial check passed.\n")
-                chk = checks.Checks(path, self.win)
-                chk.check_file(self.fs, self.win, self.deb)
+                logging.info("Initial check passed.")
+                chk = checks.Checks(path, self.win, end_callback=None)
+                chk.check_file(self.fs, self.win)
+                self.n.delete()
+                return
         elif path == HOME or path == "%s/" %HOME:
             self.fs.selected_set(HOME)
             self.fs.path_set(HOME)
+            self.n.delete()
+            return
         else:
-            print("Invalid file.")
+            logging.info("Invalid file!")
             self.fs.selected_set(HOME)
             self.fs.path_set(HOME)
             checks.file_error_popup(self.win)
-        self.n.delete()
+            self.n.delete()
+            return
+        self.et.delete()
 
     def init_wait(self, fs, path):
         fullpath = self.fs.selected_get()
@@ -173,7 +187,7 @@ class eDeb(object):
                 n.show()
                 return
             else:
-                print("Invalid file!")
+                logging.info("Invalid file!")
                 self.fs.selected_set(HOME)
                 self.fs.path_set(HOME)
                 checks.file_error_popup(self.win)
@@ -193,47 +207,55 @@ class eDeb(object):
             self.fs.path_set(HOME)
             checks.file_noexist_popup(self.win)
 
-    def bt_wait(self, bt):
+    def bt_wait(self, tb, bt):
         path = self.fs.selected_get()
         if path == HOME:
             checks.nofile_error_popup(self.win)
             return
         else:
-            self.bt_init_check(path)
+            self.et = ecore.Timer(0.4, self.bt_init_check, path)
+            self.n = n = elm.Notify(self.win)
+            lb = elm.Label(self.win)
+            lb.text = "<b>Loading Package Information...</b>"
+            lb.size_hint_align = 0.0, 0.5
+            lb.show()
+            n.orient = 1
+            n.allow_events_set(False)
+            n.content = lb
+            n.show()
 
     def init_check(self, path):
-        del self.deb
-        print("Loading %s..." %path)
-        print("Starting initial check...")
-        self.deb = debianfile.DebPackage(path, None)
-        chk_fail = self.deb.check()
-        if chk_fail != True:
-            print("Initial check failed.")
+        deb = debianfile.DebPackage(path, cache=None)
+        logging.info("Loading %s..." %path)
+        logging.info("Starting initial check...")
+        if deb.check() ==  False:
+            logging.info("Initial check failed.")
             self.fs.selected_set(HOME)
             self.fs.path_set(HOME)
-            checks.not_installable_popup(self.win, chk_fail)
+            checks.not_installable_popup(self.win)
         else:
-            print("Initial check passed.\n")
-            chk = checks.Checks(path, self.win)
-            chk.check_file(self.fs, self.win, self.deb)
+            logging.info("Initial check passed.")
+            chk = checks.Checks(path, self.win, end_callback=None)
+            chk.check_file(self.fs, self.win)
         self.n.delete()
         self.et.delete()
 
-    def inst_check(self, bt, bt2):
+    def inst_check(self, tb, bt, win):
         path = self.fs.selected_get()
-        chk = checks.Checks(path, self.win)
-        chk.check_file_install(bt, bt2, self.win, self.fs)
+        chk = checks.Checks(path, self.win, end_callback=None)
+        chk.check_file_install(bt, win, self.bt2, self.fs)
 
     def bt_init_check(self, path):
-        chk = checks.Checks(path, self.win)
-        chk.check_file(self.fs, self.win, self.deb)
-
+        chk = checks.Checks(path, self.win, end_callback=None)
+        chk.check_file(self.fs, self.win)
+        self.n.delete()
+        self.et.delete()
 
 #----- Main -{{{-
 if __name__ == "__main__":
     elm.init()
 
-    eDeb(clargs)
+    buttons_main(None)
 
     elm.run()
     elm.shutdown()

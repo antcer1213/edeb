@@ -4,7 +4,21 @@ import sys
 import elementary as elm
 import edeb.edeb as eDeb
 
+try:
+    clargs = sys.argv[1:]
+
+    if "-h" in " ".join(clargs) or "--help" in " ".join(clargs):
+        print("usage: edeb [-h] [file]\n")
+        print("An Elementary GUI debian package installer built on Python-EFLs\n")
+        print("arguments:")
+        print("\tfile\t\tDebian package to initially load.\n")
+        print("optional arguments:")
+        print("\t-h, --help\tShow this help message and exit.")
+        quit()
+except:
+    clargs = False
+
 elm.init()
-edeb = eDeb.buttons_main(sys.argv[1:])
+edeb = eDeb.eDeb(clargs)
 elm.run()
 elm.shutdown()
