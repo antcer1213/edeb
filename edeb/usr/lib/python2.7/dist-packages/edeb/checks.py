@@ -87,29 +87,38 @@ def dependency_comp(popup, win, en):
         esudo.eSudo(info=info_en, en=en, info_bt=info_en_bt, command=dep_comp, window=win, start_callback=start_cb, end_callback=dep_cb, data=n)
 
 #---End Callbacks
-def dep_grab_cb(exit_code, win, bt1, bt2, en, *args, **kwargs):
+def dep_grab_cb(exit_code, win, *args, **kwargs):
     n  = kwargs["data"]
     info = kwargs["info"]
     bt = kwargs["info_bt"]
+    deb = kwargs["deb"]
+    dep_btn = kwargs["dep_btn"]
+    dep_fx = kwargs["dep_fx"]
 
     if exit_code == 0:
         print("Successfully Grabbed Dependencies.")
         info.entry_append("<ps><ps><b>Dependencies were successfully met!</b>")
+        deb.depends_check(True)
+        dep_btn.delete()
+        dep_fx(None)
         bt.disabled_set(False)
     else:
         print("Something went wrong while installing dependencies.")
         info.entry_append("<ps><ps><b>Error: Dependency-grabbing was not successful.</b><ps><ps>Please view all <b>Errors</b> above to find out why.")
         bt.text = "OK"
         bt.disabled_set(False)
-def main_cb(exit_code, win, bt1, bt2, en, *args, **kwargs):
+def main_cb(exit_code, win, *args, **kwargs):
+    en = kwargs["en"]
     n  = kwargs["data"]
     info = kwargs["info"]
     bt = kwargs["info_bt"]
+    bt1 = kwargs["bt1"]
+    bt2 = kwargs["bt2"]
 
     if bt1 != None:
         bt1.disabled_set(False)
         bt2.disabled_set(False)
-        info.disabled_set(False)
+        en.disabled_set(False)
     if exit_code == 0:
         print("Installation completed successfully!")
         info.entry_append("<ps><ps><b>Installation completed successfully!</b>")
@@ -121,7 +130,8 @@ def main_cb(exit_code, win, bt1, bt2, en, *args, **kwargs):
         bt.text = "Install Missing Dependencies"
         bt.callback_clicked_add(lambda o: dependency_popup(win, en))
         bt.disabled_set(False)
-def dep_cb(exit_code, win, bt1, bt2, en, *args, **kwargs):
+def dep_cb(exit_code, win, *args, **kwargs):
+    en = kwargs["en"]
     n = kwargs["data"]
     info = kwargs["info"]
     bt = kwargs["info_bt"]
@@ -165,29 +175,71 @@ def start_cb(win, *args, **kwargs):
     box.pack_end(bt)
     bt.show()
 
-    sep = elm.Separator(win)
-    sep.horizontal = True
-    box.pack_end(sep)
-    sep.show()
+    bx = elm.Box(win)
+    bx.size_hint_weight = 1.0, 0.0
+    bx.size_hint_align = -1.0, -1.0
+    bx.horizontal_set(True)
+    bx.homogeneous_set(True)
+    box.pack_end(bx)
+    bx.show()
 
-    #~ pb = elm.Progressbar(win)
-    #~ pb.style = "wheel"
-    #~ pb.pulse(True)
-    #~ pb.size_hint_weight = 1.0, 1.0
-    #~ pb.size_hint_align_set(-1.0, -1.0)
-    #~ box.pack_end(pb)
-    #~ pb.show()
+    bt = elm.Button(win)
+    bt.text = "Copy"
+    bt.callback_clicked_add(lambda o: copying(en, win))
+    bt.size_hint_align = -1.0, -1.0
+    bt.size_hint_weight = 0.0, 0.0
+    bx.pack_end(bt)
+    bt.show()
+
+    bt = elm.Button(win)
+    bt.text = "Export"
+    bt.callback_clicked_add(lambda o: exporting(en, win))
+    bt.size_hint_align = -1.0, -1.0
+    bt.size_hint_weight = 0.0, 0.0
+    bx.pack_end(bt)
+    bt.show()
 
     box.show()
 
-    #~ n.orient = 1
-    #~ n.size_hint_weight = 1.0, 1.0
-    #~ n.allow_events_set(False)
     n.content = box
     n.show()
     n.activate()
 
+#~ Copy/Export Functions
+def copying(en, win):
+    en.select_all()
+    string = en.selection_get()
+    temp = elm.Entry(win)
+    temp.entry_set(txt_format(string,0))
+    temp.select_all()
+    temp.selection_copy()
+    en.select_none()
+    #~ del temp
 
+def exporting(en, win):
+    lb = elm.Label(win)
+    lb.text = "<b>...exported : %s/edeb.info</b>"%HOME
+    en.select_all()
+    string = en.selection_get()
+    with open("%s/edeb.info"%HOME, "w") as file:
+        file.write(txt_format(string,1))
+    en.select_none()
+    n = elm.Notify(win)
+    n.orient = 2
+    n.content = lb
+    n.timeout_set(3.0)
+    n.show()
+
+def txt_format(string, num):
+    if num==0:
+        string = string.replace("<ps>", "<br>")
+    elif num==1:
+        string = string.replace("<ps>", "\n")
+    string = string.replace("</ps>", "")
+    string = string.replace("<b>", "")
+    string = string.replace("</b>", "")
+    string = string.replace("         ", "")
+    return string
 
 
 class Checks(object):
@@ -205,8 +257,6 @@ class Checks(object):
             filesinlist
         except NameError:
             filesinlist = "<br>       ".join(deb.filelist)
-        else:
-            pass
 
 #----------------Desc
         try:
@@ -303,7 +353,7 @@ class Checks(object):
                 n = elm.InnerWindow(win)
                 info_en = elm.Entry(win)
                 info_en_bt = elm.Button(win)
-                esudo.eSudo(info=info_en, info_bt=info_en_bt, command=dep_grab, window=self.win, start_callback=start_cb, end_callback=dep_grab_cb, data=n)
+                esudo.eSudo(deb=deb, dep_fx=depends, dep_btn=bt2, info=info_en, info_bt=info_en_bt, command=dep_grab, window=self.win, start_callback=start_cb, end_callback=dep_grab_cb, data=n)
 
         def compare(btn):
             debcompare = deb.compare_to_version_in_cache(use_installed=True)
@@ -336,7 +386,7 @@ class Checks(object):
         def checks(btn):
             def real_checks(btn, pkg_info_en):
                 try:
-                    breaks   = deb.check_breaks_existing_packages()
+                    breaks = deb.check_breaks_existing_packages()
                     if breaks != True:
                         pkg_info_en.entry_set("<b>WARNING:</> Installing this package will break certain existing packages.<ps><ps><ps>%s"%breaks)
                     elif deb.check_conflicts() != True:
@@ -376,12 +426,11 @@ class Checks(object):
             else:
                 pkg_info_en.entry_append("%s<ps>" %missdep)
                 if self.depbtn:
-                    return
+                    pass
                 else:
                     bt2.text = "Attempt to Install Missing Dependencies"
                     bt2.show()
                     self.depbtn = True
-                    return
 
         def info(btn):
             pkg_info_en.entry_set("%s%s%s%s%s%s%s<ps><ps><b><i>Extra Information:</i></b><ps>%s%s%s%s%s%s" \

@@ -22,7 +22,7 @@ def pw_error_popup(bt, win):
 
 #----eSudo
 class eSudo(object):
-    def __init__( self, command=None, window=None, bt1=None, bt2= None, en=None, start_callback=None, end_callback=None, *args, **kwargs):
+    def __init__( self, command=None, window=None, start_callback=None, end_callback=None, *args, **kwargs):
 
         self.mainWindow = self.win = win = window
         self.Window = False
@@ -33,12 +33,20 @@ class eSudo(object):
 
         self.args = args
         self.kwargs = kwargs
-        self.inst_info = kwargs['info']
 
         self.blocked = blocked = False
-        self.bt1 = bt1
-        self.bt2 = bt2
-        self.en = en
+        self.inst_info = kwargs['info']
+        try:
+            self.bt1 = kwargs['bt1']
+            self.bt2 = kwargs['bt2']
+        except:
+            self.bt1 = kwargs['bt1'] = None
+            self.bt2 = kwargs['bt2'] = None
+
+        try:
+            self.en = kwargs['en']
+        except:
+            self.en = kwargs['en'] = None
 
 #--------eSudo Window
         bz = elm.Box(win)
@@ -256,6 +264,6 @@ class eSudo(object):
         print("Command done.")
         if self.end_cb:
             try:
-                self.end_cb(event.exit_code, self.mainWindow, self.bt1, self.bt2, self.en, *self.args, **self.kwargs)
+                self.end_cb(event.exit_code, self.mainWindow, *self.args, **self.kwargs)
             except:
                 print("Exception while running end_cb")

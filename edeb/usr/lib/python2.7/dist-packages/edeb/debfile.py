@@ -339,12 +339,12 @@ class DebPackage(object):
                     return self.VERSION_OUTDATED
         return self.VERSION_NONE
 
-    def depends_check(self):
+    def depends_check(self, clear=False):
         """Check package dependencies."""
 
         self.check_was_run = True
 
-        if not self.satisfy_depends(self.depends):
+        if not self.satisfy_depends(self.depends, clear):
             return False
 
 
@@ -372,8 +372,12 @@ class DebPackage(object):
             return "Broken dependencies from previous installation (broken cache). Cache has been cleared.<ps><ps>If the issue persists, please select Fix to attempt to complete the broken installation."
         return True
 
-    def satisfy_depends(self, depends):
+    def satisfy_depends(self, depends, clear=False):
         """Satisfy the dependencies."""
+        if clear:
+            self.cache = apt.Cache()
+            self.need_pkgs = []
+
         # turn off MarkAndSweep via a action group (if available)
         try:
             _actiongroup = apt_pkg.ActionGroup(self.cache._depcache)
