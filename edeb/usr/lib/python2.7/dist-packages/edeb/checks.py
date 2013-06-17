@@ -15,22 +15,10 @@ By: AntCer (bodhidocs@gmail.com)
 HOME = os.getenv("HOME")
 
 #----Popups
-def nofile_error_popup(win):
+def generic_error_popup(win, string):
     popup = elm.Popup(win)
-    popup.text = "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation."
-    popup.timeout = 3.0
-    popup.show()
-
-def file_noexist_popup(win):
-    popup = elm.Popup(win)
-    popup.text = "<b>File does not exist</><br><br>Please select an appropriate file candidate for installation."
-    popup.timeout = 3.0
-    popup.show()
-
-def file_error_popup(win):
-    popup = elm.Popup(win)
-    popup.text = "<b>Invalid File Format</><br><br>That is <em>not</> a .deb file!"
-    popup.timeout = 3.0
+    popup.text = string
+    popup.timeout = 2.3
     popup.show()
 
 def no_net_popup(win):
@@ -50,7 +38,7 @@ def not_installable_popup(win, msg):
         bt.text = "Fix"
         bt.callback_clicked_add(lambda o: dependency_comp(popup, win))
         popup.part_content_set("button1", bt)
-    bt = elm.Button(win)
+        bt = elm.Button(win)
     bt.text = "Close"
     bt.callback_clicked_add(lambda o: popup.delete())
     if "Broken " in msg:
@@ -84,7 +72,9 @@ def dependency_comp(popup, win, en):
         n = elm.InnerWindow(win)
         info_en = elm.Entry(win)
         info_en_bt = elm.Button(win)
-        esudo.eSudo(info=info_en, en=en, info_bt=info_en_bt, command=dep_comp, window=win, start_callback=start_cb, end_callback=dep_cb, data=n)
+        bt3 = elm.Button(win)
+        bt4 = elm.Button(win)
+        esudo.eSudo(bt3=bt3, bt4=bt4, info=info_en, en=en, info_bt=info_en_bt, command=dep_comp, window=win, start_callback=start_cb, end_callback=dep_cb, data=n)
 
 #---End Callbacks
 def dep_grab_cb(exit_code, win, *args, **kwargs):
@@ -94,11 +84,13 @@ def dep_grab_cb(exit_code, win, *args, **kwargs):
     deb = kwargs["deb"]
     dep_btn = kwargs["dep_btn"]
     dep_fx = kwargs["dep_fx"]
+    depbt_chk = kwargs["depbt_chk"]
 
     if exit_code == 0:
         print("Successfully Grabbed Dependencies.")
         info.entry_append("<ps><ps><b>Dependencies were successfully met!</b>")
         deb.depends_check(True)
+        depbt_chk = False
         dep_btn.delete()
         dep_fx(None)
         bt.disabled_set(False)
@@ -114,6 +106,8 @@ def main_cb(exit_code, win, *args, **kwargs):
     bt = kwargs["info_bt"]
     bt1 = kwargs["bt1"]
     bt2 = kwargs["bt2"]
+    bt3 = kwargs["bt3"]
+    bt4 = kwargs["bt4"]
 
     if bt1 != None:
         bt1.disabled_set(False)
@@ -122,14 +116,15 @@ def main_cb(exit_code, win, *args, **kwargs):
     if exit_code == 0:
         print("Installation completed successfully!")
         info.entry_append("<ps><ps><b>Installation completed successfully!</b>")
-        bt.disabled_set(False)
         en.path_set(HOME)
     else:
         print("Something went wrong. Likely, dependencies that weren't met before attempting installation.")
         info.entry_append("<ps><ps><b>Urgent</b>: Something went wrong with installation. Likely, unmet dependencies.")
         bt.text = "Install Missing Dependencies"
         bt.callback_clicked_add(lambda o: dependency_popup(win, en))
-        bt.disabled_set(False)
+    bt.disabled_set(False)
+    bt3.disabled_set(False)
+    bt4.disabled_set(False)
 def dep_cb(exit_code, win, *args, **kwargs):
     en = kwargs["en"]
     n = kwargs["data"]
@@ -183,17 +178,19 @@ def start_cb(win, *args, **kwargs):
     box.pack_end(bx)
     bx.show()
 
-    bt = elm.Button(win)
+    bt = kwargs["bt3"]
     bt.text = "Copy"
     bt.callback_clicked_add(lambda o: copying(en, win))
+    bt.disabled_set(True)
     bt.size_hint_align = -1.0, -1.0
     bt.size_hint_weight = 0.0, 0.0
     bx.pack_end(bt)
     bt.show()
 
-    bt = elm.Button(win)
+    bt = kwargs["bt4"]
     bt.text = "Export"
     bt.callback_clicked_add(lambda o: exporting(en, win))
+    bt.disabled_set(True)
     bt.size_hint_align = -1.0, -1.0
     bt.size_hint_weight = 0.0, 0.0
     bx.pack_end(bt)
@@ -207,23 +204,17 @@ def start_cb(win, *args, **kwargs):
 
 #~ Copy/Export Functions
 def copying(en, win):
-    en.select_all()
-    string = en.selection_get()
     temp = elm.Entry(win)
-    temp.entry_set(txt_format(string,0))
+    temp.entry = txt_format(en.entry_get(),0)
     temp.select_all()
     temp.selection_copy()
-    en.select_none()
-    #~ del temp
+    temp.delete()
 
 def exporting(en, win):
     lb = elm.Label(win)
     lb.text = "<b>...exported : %s/edeb.info</b>"%HOME
-    en.select_all()
-    string = en.selection_get()
     with open("%s/edeb.info"%HOME, "w") as file:
-        file.write(txt_format(string,1))
-    en.select_none()
+        file.write(txt_format(en.entry_get(),1))
     n = elm.Notify(win)
     n.orient = 2
     n.content = lb
@@ -248,10 +239,11 @@ class Checks(object):
         self.file       = command
         self.depbtn     = False
         self.depcheck   = False
+        self.chk        = 0
 
 #----Package Info
     def pkg_information(self, deb):
-        win             = self.win
+        win = self.win
 
         try:
             filesinlist
@@ -353,7 +345,9 @@ class Checks(object):
                 n = elm.InnerWindow(win)
                 info_en = elm.Entry(win)
                 info_en_bt = elm.Button(win)
-                esudo.eSudo(deb=deb, dep_fx=depends, dep_btn=bt2, info=info_en, info_bt=info_en_bt, command=dep_grab, window=self.win, start_callback=start_cb, end_callback=dep_grab_cb, data=n)
+                bt3 = elm.Button(win)
+                bt4 = elm.Button(win)
+                esudo.eSudo(depbt_chk=self.depbtn, bt3=bt3, bt4=bt4, deb=deb, dep_fx=depends, dep_btn=bt2, info=info_en, info_bt=info_en_bt, command=dep_grab, window=self.win, start_callback=start_cb, end_callback=dep_grab_cb, data=n)
 
         def compare(btn):
             debcompare = deb.compare_to_version_in_cache(use_installed=True)
@@ -400,14 +394,13 @@ class Checks(object):
                     elm.exit()
                     quit()
 
+            self.chk += 1
             btn.disabled_set(True)
             pkg_info_en.entry_set("<b>Please wait...</>")
             et = ecore.Timer(0.1, real_checks, btn, pkg_info_en)
 
         def depends(btn):
-            if self.depcheck:
-                pass
-            else:
+            if not self.depcheck:
                 self.depcheck = True
                 deb.depends_check()
 
@@ -425,9 +418,7 @@ class Checks(object):
                 pkg_info_en.entry_append("None<ps>")
             else:
                 pkg_info_en.entry_append("%s<ps>" %missdep)
-                if self.depbtn:
-                    pass
-                else:
+                if not self.depbtn:
                     bt2.text = "Attempt to Install Missing Dependencies"
                     bt2.show()
                     self.depbtn = True
@@ -445,13 +436,10 @@ class Checks(object):
             et = ecore.Timer(0.3, real_files, btn, pkg_info_en)
             pkg_info_en.entry_set("<b>Loading file list...</>")
 
-        def closebtn(deb):
-            self.depbtn = None
+        def closebtn():
             self.depcheck = None
             pkgbox.delete()
             iw.delete()
-            del deb
-
 
         pkgbox = elm.Box(self.win)
         pkgbox.size_hint_weight_set(1.0, 1.0)
@@ -468,8 +456,8 @@ class Checks(object):
         tb.size_hint_weight_set(1.0, 0.0)
         tb.size_hint_align_set(-1.0, -1.0)
         tb.item_append("", "Info",    lambda x,y: info(y))
-        tb.item_append("", "Compare", lambda x,y: compare(y))
         tb.item_append("", "Checks",  lambda x,y: checks(y))
+        tb.item_append("", "Compare", lambda x,y: compare(y))
         tb.item_append("", "Depends", lambda x,y: depends(y))
         tb.item_append("", "Files",   lambda x,y: files(y))
         tb.homogeneous_set(True)
@@ -499,34 +487,40 @@ class Checks(object):
         bt2.size_hint_align_set(-1.0, -1.0)
         bt2.callback_clicked_add(lambda o: dependency_grab())
         pkgbox.pack_end(bt2)
+        if self.depbtn:
+            bt2.text = "Attempt to Install Missing Dependencies"
+            bt2.show()
 
         bt = elm.Button(self.win)
         bt.text = "OK"
         bt.size_hint_weight_set(1.0, 0.0)
         bt.size_hint_align_set(-1.0, -1.0)
-        bt.callback_clicked_add(lambda o: closebtn(deb))
+        bt.callback_clicked_add(lambda o: closebtn() if self.chk>0 else generic_error_popup(win,"<b>For your own benefit...</><br><br>Please run <b>Checks</> before installing."))
+        #~ bt.callback_clicked_add(lambda o: closebtn())
         pkgbox.pack_end(bt)
         bt.show()
 
 #----Checks
     def check_file(self, fs, win, deb):
         if self.file == HOME:
-            nofile_error_popup(win)
+            generic_error_popup(win, "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation.")
         else:
             self.pkg_information(deb)
 
     def check_file_install(self, bt1, bt2, win, en):
         if self.file == HOME:
-            nofile_error_popup(win)
+            generic_error_popup(win, "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation.")
         else:
             bt1.disabled_set(True)
             bt2.disabled_set(True)
             en.disabled_set(True)
             self.bt1 = bt1
             self.bt2 = bt2
-            print("\nPackage: %s" %self.file)
+            print("Package: %s" %self.file)
             install_deb = 'dpkg -i %s'%self.file
             n = elm.InnerWindow(win)
             info_en = elm.Entry(win)
             info_en_bt = elm.Button(win)
-            esudo.eSudo(info=info_en, info_bt=info_en_bt, command=install_deb, window=win, bt1=bt1, bt2=bt2, en=en, start_callback=start_cb, end_callback=main_cb, data=n)
+            bt3 = elm.Button(win)
+            bt4 = elm.Button(win)
+            esudo.eSudo(bt3=bt3, bt4=bt4, info=info_en, info_bt=info_en_bt, command=install_deb, window=win, bt1=bt1, bt2=bt2, en=en, start_callback=start_cb, end_callback=main_cb, data=n)

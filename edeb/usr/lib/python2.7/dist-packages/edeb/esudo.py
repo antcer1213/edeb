@@ -12,7 +12,7 @@ import evas
 import elementary as elm
 
 #----Popups
-def pw_error_popup(bt, win):
+def pw_error_popup(win):
     popup = elm.Popup(win)
     popup.size_hint_weight = 1.0, 1.0
     popup.text = "<b>Error</><br><br>Incorrect Password!<br>Please try again."
@@ -194,7 +194,7 @@ class eSudo(object):
             bt.disabled_set(False)
             self.bt.disabled_set(False)
             enpw.disabled_set(False)
-            pw_error_popup(bt, self.mainWindow)
+            pw_error_popup(self.mainWindow)
             enpw.entry = ""
             enpw.focus = True
             print("Invalid password! Please try again.")
@@ -232,7 +232,7 @@ class eSudo(object):
         self.run_command("sudo -S %s" % (self.cmd), password)
 
     def run_command(self, command, password):
-        self.cmd_exe = cmd = ecore.Exe(command, 1|4|2)
+        cmd = ecore.Exe(command, 1|4|2)
         cmd.on_add_event_add(self.command_started)
         cmd.on_data_event_add(self.received_data, password)
         cmd.on_error_event_add(self.received_error, password)

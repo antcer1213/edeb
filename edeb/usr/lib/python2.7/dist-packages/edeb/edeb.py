@@ -117,7 +117,7 @@ class eDeb(object):
                 n.show()
             else:
                 print("eDeb Error: Path, %s, does not exist." %path)
-                checks.file_noexist_popup(self.win)
+                checks.generic_error_popup(self.win, "<b>File does not exist</><br><br>Please select an appropriate file candidate for installation.")
 
 #----Common
     def cli_add(self, path):
@@ -139,8 +139,8 @@ class eDeb(object):
                 checks.not_installable_popup(self.win, chk_fail)
             else:
                 print("Initial check passed.\n")
-                chk = checks.Checks(path, self.win)
-                chk.check_file(self.fs, self.win, self.deb)
+                self.chk = checks.Checks(path, self.win)
+                self.chk.check_file(self.fs, self.win, self.deb)
         elif path == HOME or path == "%s/" %HOME:
             self.fs.selected_set(HOME)
             self.fs.path_set(HOME)
@@ -148,7 +148,7 @@ class eDeb(object):
             print("Invalid file.")
             self.fs.selected_set(HOME)
             self.fs.path_set(HOME)
-            checks.file_error_popup(self.win)
+            checks.generic_error_popup(self.win, "<b>Invalid File Format</><br><br>That is <em>not</> a .deb file!")
         self.n.delete()
 
     def init_wait(self, fs, path):
@@ -176,7 +176,7 @@ class eDeb(object):
                 print("Invalid file!")
                 self.fs.selected_set(HOME)
                 self.fs.path_set(HOME)
-                checks.file_error_popup(self.win)
+                checks.generic_error_popup(self.win, "<b>Invalid File Format</><br><br>That is <em>not</> a .deb file!")
                 return
         else:
             self.fs.selected_set(fullpath)
@@ -187,22 +187,19 @@ class eDeb(object):
         path = fs.selected_get()
         if os.path.exists(path):
             self.init_wait(fs, path)
-            return
         else:
             self.fs.selected_set(HOME)
             self.fs.path_set(HOME)
-            checks.file_noexist_popup(self.win)
+            checks.generic_error_popup(self.win, "<b>File does not exist</><br><br>Please select an appropriate file candidate for installation.")
 
     def bt_wait(self, bt):
         path = self.fs.selected_get()
         if path == HOME:
-            checks.nofile_error_popup(self.win)
-            return
+            checks.generic_error_popup(self.win, "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation.")
         else:
             self.bt_init_check(path)
 
     def init_check(self, path):
-        del self.deb
         print("Loading %s..." %path)
         print("Starting initial check...")
         self.deb = debianfile.DebPackage(path, None)
@@ -214,19 +211,23 @@ class eDeb(object):
             checks.not_installable_popup(self.win, chk_fail)
         else:
             print("Initial check passed.\n")
-            chk = checks.Checks(path, self.win)
-            chk.check_file(self.fs, self.win, self.deb)
+            self.chk = checks.Checks(path, self.win)
+            self.chk.check_file(self.fs, self.win, self.deb)
         self.n.delete()
         self.et.delete()
 
     def inst_check(self, bt, bt2):
         path = self.fs.selected_get()
-        chk = checks.Checks(path, self.win)
-        chk.check_file_install(bt, bt2, self.win, self.fs)
+        if path == HOME:
+            checks.generic_error_popup(self.win, "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation.")
+        else:
+            self.chk.check_file_install(bt, bt2, self.win, self.fs)
 
     def bt_init_check(self, path):
-        chk = checks.Checks(path, self.win)
-        chk.check_file(self.fs, self.win, self.deb)
+        try:
+            self.chk.check_file(self.fs, self.win, self.deb)
+        except:
+            checks.generic_error_popup(self.win, "<b>No File Selected</><br><br>Please select an appropriate file candidate for installation.")
 
 
 #----- Main -{{{-
